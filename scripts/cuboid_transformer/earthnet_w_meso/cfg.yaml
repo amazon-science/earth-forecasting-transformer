@@ -1,0 +1,117 @@
+dataset:
+  return_mode: "default"
+  data_aug_mode: null
+  data_aug_cfg:
+      mixup_alpha: 0.2
+  test_subset_name: ["iid", "ood"]
+  in_len: 10
+  out_len: 20
+  layout: "THWC"
+  static_layout: "CHW"
+  val_ratio: 0.1
+  train_val_split_seed: null
+  highresstatic_expand_t: false 
+  mesostatic_expand_t: false 
+  meso_crop: null
+  fp16: false 
+layout:
+  in_len: 10
+  out_len: 20
+  layout: "NTHWC"
+  data_seq_len: 30
+optim:
+  total_batch_size: 32
+  micro_batch_size: 2
+  seed: 0
+  method: "adamw"
+  lr: 0.0005
+  wd: 1.0e-05
+  gradient_clip_val: 1.0
+  max_epochs: 200
+  # scheduler
+  lr_scheduler_mode: "cosine"
+  min_lr_ratio: 1.0e-3
+  warmup_min_lr_ratio: 0.0
+  warmup_percentage: 0.2
+  # early stopping
+  early_stop: true
+  early_stop_mode: "min"
+  early_stop_patience: 5
+  save_top_k: 5
+logging:
+  logging_prefix: "Cuboid_EarthNet"
+  monitor_lr: true
+  monitor_device: false
+  track_grad_norm: -1
+  use_wandb: false
+trainer:
+  check_val_every_n_epoch: 5
+  log_step_ratio: 0.001
+  precision: 32
+vis:
+  train_example_data_idx_list: [0, ]
+  val_example_data_idx_list: [0, ]
+  test_example_data_idx_list: [0, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400]
+  eval_example_only: false
+model:
+  input_shape: [10, 128, 128, 4]
+  target_shape: [20, 128, 128, 4]
+  base_units: 256
+  # block_units: null
+  scale_alpha: 1.0
+
+  enc_depth: [1, 1]
+  dec_depth: [1, 1]
+  enc_use_inter_ffn: true
+  dec_use_inter_ffn: true
+  dec_hierarchical_pos_embed: true
+
+  downsample: 2
+  downsample_type: "patch_merge"
+  upsample_type: "upsample"
+
+  num_global_vectors: 8
+  use_dec_self_global: false
+  dec_self_update_global: true
+  use_dec_cross_global: false
+  use_global_vector_ffn: false
+  use_global_self_attn: true
+  separate_global_qkv: true
+  global_dim_ratio: 1
+
+  self_pattern: "axial"
+  cross_self_pattern: "axial"
+  cross_pattern: "cross_1x1"
+  cross_last_n_frames: null
+
+  attn_drop: 0.1
+  proj_drop: 0.1
+  ffn_drop: 0.1
+  num_heads: 4
+
+  ffn_activation: "gelu"
+  gated_ffn: false
+  norm_layer: "layer_norm"
+  padding_type: "zeros"
+  pos_embed_type: "t+hw"
+  use_relative_pos: true
+  self_attn_use_final_proj: true
+
+  z_init_method: "zeros"
+  checkpoint_level: 0
+
+  initial_downsample_type: "stack_conv"
+  initial_downsample_activation: "leaky"
+  initial_downsample_stack_conv_num_layers: 2
+  initial_downsample_stack_conv_dim_list: [64, 256]
+  initial_downsample_stack_conv_downscale_list: [2, 2]
+  initial_downsample_stack_conv_num_conv_list: [2, 2]
+
+  attn_linear_init_mode: "0"
+  ffn_linear_init_mode: "0"
+  conv_init_mode: "0"
+  down_up_linear_init_mode: "0"
+  norm_init_mode: "0"
+  # different from CuboidTransformerModel, no arg `dec_use_first_self_attn=False`
+  auxiliary_channels: 7
+  unet_dec_cross_mode: "both"

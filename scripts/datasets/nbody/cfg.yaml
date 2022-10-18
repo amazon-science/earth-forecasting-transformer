@@ -1,0 +1,27 @@
+dataset:
+  dataset_name: "nbody_digits3_len20_size64_r0_train20k"
+  num_train_samples: 20000
+  num_val_samples: 1000
+  num_test_samples: 1000
+  digit_num: null
+  img_size: 64
+  raw_img_size: 128
+  seq_len: 20
+  raw_seq_len_multiplier: 5
+  distractor_num: null
+  distractor_size: 5
+  max_velocity_scale: 2.0
+  initial_velocity_range: [0.0, 2.0]
+  random_acceleration_range: [0.0, 0.0]
+  scale_variation_range: [1.0, 1.0]
+  rotation_angle_range: [-0, 0]
+  illumination_factor_range: [1.0, 1.0]
+  period: 5
+  global_rotation_prob: 0.5
+  index_range: [0, 40000]
+  mnist_data_path: null
+  # N-Body params
+  nbody_acc_mode: "r0"
+  nbody_G: 0.05
+  nbody_softening_distance: 10.0
+  nbody_mass: null
