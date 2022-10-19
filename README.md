@@ -40,7 +40,7 @@ CUDA_HOME=/usr/local/cuda python3 -m pip install -v --no-cache-dir --global-opti
 ### MovingMNIST
 We follow [*Unsupervised Learning of Video Representations using LSTMs (ICML2015)*](http://www.cs.toronto.edu/~nitish/unsup_video.pdf) to use [MovingMNIST](https://github.com/mansimov/unsupervised-videos) that contains 10,000 sequences each of length 20 showing 2 digits moving in a $64\times 64$ frame.
 
-Our [MovingMNIST DataModule](src/earthformer/datasets/moving_mnist/moving_mnist.py) automatically downloads it to [default data dir](./datasets/moving_mnist).
+Our [MovingMNIST DataModule](src/earthformer/datasets/moving_mnist/moving_mnist.py) automatically downloads it to [datasets/moving_mnist](./datasets/moving_mnist).
 
 ### N-body MNIST
 The underlying dynamics in the N-body MNIST dataset is governed by the Newton's law of universal gravitation:
@@ -57,19 +57,13 @@ python ./scripts/datasets/nbody/generate_nbody_dataset.py --cfg ./scripts/datase
 
 ### SEVIR
 [Storm EVent ImageRy (SEVIR) dataset](https://sevir.mit.edu/) is a spatiotemporally aligned dataset containing over 10,000 weather events.
-We adopt NEXRAD Vertically Integrated Liquid (VIL) mosaics in SEVIR for benchmarking precipitation nowcasting, i.e., to predict the future VIL up to 60 minutes given 65 minutes context VIL ($13\times 384\times 384\rightarrow 12\times 384\times 384$).
-
-We also propose a downsampled version named SEVIR-LR for faster debugging and testing, which downsamples the original sequences in SEVIR by $2\times3\times$, The resolution becomes $7\times 128\times 128\rightarrow 6\times 128\times 128$. 
+We adopt NEXRAD Vertically Integrated Liquid (VIL) mosaics in SEVIR for benchmarking precipitation nowcasting, i.e., to predict the future VIL up to 60 minutes given 65 minutes context VIL. 
+The resolution is thus $13\times 384\times 384\rightarrow 12\times 384\times 384$.
 
 To download SEVIR dataset from AWS S3, run:
 ```bash
 cd ROOT_DIR/earthformer
 python ./scripts/datasets/sevir/download_sevir.py --dataset sevir
-```
-To download SEVIR-LR dataset from AWS S3, run:
-```bash
-cd ROOT_DIR/earthformer
-python ./scripts/datasets/sevir/download_sevir.py --dataset sevir_lr
 ```
 
 A visualization example of SEVIR VIL sequence:
