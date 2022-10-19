@@ -1,0 +1,123 @@
+dataset:
+  dataset_name: "nbody_digits3_len20_size64_r0_train20k"
+  num_train_samples: 20000
+  num_val_samples: 1000
+  num_test_samples: 1000
+  digit_num: null
+  img_size: 64
+  raw_img_size: 128
+  seq_len: 20
+  raw_seq_len_multiplier: 5
+  distractor_num: null
+  distractor_size: 5
+  max_velocity_scale: 2.0
+  initial_velocity_range: [0.0, 2.0]
+  random_acceleration_range: [0.0, 0.0]
+  scale_variation_range: [1.0, 1.0]
+  rotation_angle_range: [-0, 0]
+  illumination_factor_range: [1.0, 1.0]
+  period: 5
+  global_rotation_prob: 0.5
+  index_range: [0, 40000]
+  mnist_data_path: null
+  # N-Body params
+  nbody_acc_mode: "r0"
+  nbody_G: 0.05
+  nbody_softening_distance: 10.0
+  nbody_mass: null
+layout:
+  in_len: 10
+  out_len: 10
+  layout: "NTHWC"
+  data_seq_len: 20
+optim:
+  total_batch_size: 32
+  micro_batch_size: 2
+  seed: 0
+  method: "adamw"
+  lr: 0.001
+  wd: 1.0e-05
+  gradient_clip_val: 1.0
+  max_epochs: 100
+  # scheduler
+  lr_scheduler_mode: "cosine"
+  min_lr_ratio: 1.0e-3
+  warmup_min_lr_ratio: 0.0
+  warmup_percentage: 0.2
+  # early stopping
+  early_stop: true
+  early_stop_mode: "min"
+  early_stop_patience: 20
+  save_top_k: 1
+logging:
+  logging_prefix: "Cuboid_NBody"
+  monitor_lr: true
+  monitor_device: false
+  track_grad_norm: -1
+  use_wandb: false
+trainer:
+  check_val_every_n_epoch: 1
+  log_step_ratio: 0.001
+  precision: 32
+vis:
+  train_example_data_idx_list: [0, ]
+  val_example_data_idx_list: [0, ]
+  test_example_data_idx_list: [0, ]
+  eval_example_only: false
+model:
+  input_shape: [10, 64, 64, 1]
+  target_shape: [10, 64, 64, 1]
+  base_units: 64
+  # block_units: null
+  scale_alpha: 1.0
+
+  enc_depth: [4, 4]
+  dec_depth: [4, 4]
+  enc_use_inter_ffn: true
+  dec_use_inter_ffn: true
+  dec_hierarchical_pos_embed: true
+
+  downsample: 2
+  downsample_type: "patch_merge"
+  upsample_type: "upsample"
+
+  num_global_vectors: 0
+  use_dec_self_global: false
+  dec_self_update_global: true
+  use_dec_cross_global: false
+  use_global_vector_ffn: false
+  use_global_self_attn: false
+  separate_global_qkv: false
+  global_dim_ratio: 1
+
+  self_pattern: "axial"
+  cross_self_pattern: "axial"
+  cross_pattern: "cross_1x1"
+  cross_last_n_frames: null
+
+  attn_drop: 0.1
+  proj_drop: 0.1
+  ffn_drop: 0.1
+  num_heads: 4
+
+  ffn_activation: "gelu"
+  gated_ffn: false
+  norm_layer: "layer_norm"
+  padding_type: "zeros"
+  pos_embed_type: "t+hw"
+  use_relative_pos: true
+  self_attn_use_final_proj: true
+  dec_use_first_self_attn: false
+
+  z_init_method: "zeros"
+  initial_downsample_type: "conv"
+  initial_downsample_activation: "leaky"
+  initial_downsample_scale: 2
+  initial_final_sample_num_conv: 2
+  checkpoint_level: 0
+
+  attn_linear_init_mode: "0"
+  ffn_linear_init_mode: "0"
+  conv_init_mode: "0"
+  down_up_linear_init_mode: "0"
+  norm_init_mode: "0"

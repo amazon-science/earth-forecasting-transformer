@@ -1,0 +1,24 @@
+dataset:
+  return_mode: "minimal"
+  test_subset_name: ["iid", "ood"]
+  in_len: 10
+  out_len: 20
+  layout: "THWC"
+  static_layout: null
+  val_ratio: 0.1
+  train_val_split_seed: null
+  highresstatic_expand_t: false 
+  mesostatic_expand_t: false 
+  meso_crop: null
+  fp16: false 
+optim:
+  micro_batch_size: 4
+  seed: 0
+logging:
+  logging_prefix: "Persistence_EarthNet"
+  use_wandb: false
+vis:
+  train_example_data_idx_list: [0, ]
+  val_example_data_idx_list: [0, ]
+  test_example_data_idx_list: [0, ]
+  eval_example_only: false
