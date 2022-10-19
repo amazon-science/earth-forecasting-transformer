@@ -130,22 +130,6 @@ def download_SEVIR(save_dir=None):
         os.system(f"aws s3 cp --no-sign-request --recursive s3://sevir/data/vil "
                   f"{os.path.join(sevir_dir, 'data', 'vil')}")
 
-def download_SEVIR_LR(save_dir=None):
-    r"""
-    Downloaded dataset is saved in save_dir/sevir_lr
-    """
-    if save_dir is None:
-        save_dir = cfg.datasets_dir
-    sevir_dir = os.path.join(save_dir, "sevir_lr")
-    if os.path.exists(sevir_dir):
-        raise FileExistsError(f"Path to save SEVIR-LR dataset {sevir_dir} already exists!")
-    else:
-        os.makedirs(sevir_dir)
-        os.system(f"wget https://deep-earth.s3.amazonaws.com/datasets/sevir_lr.zip "
-                  f"-P {os.path.join(sevir_dir, 'sevir_lr.zip')}")
-        os.system(f"unzip {os.path.join(sevir_dir, 'sevir_lr.zip')} "
-                  f"-d {sevir_dir}")
-
 class SEVIRLightningDataModule(LightningDataModule):
 
     def __init__(self,
@@ -220,7 +204,7 @@ class SEVIRLightningDataModule(LightningDataModule):
             if self.dataset_name == "sevir":
                 download_SEVIR()
             else:  # "sevir_lr"
-                download_SEVIR_LR()
+                raise NotImplementedError
 
     def setup(self, stage = None) -> None:
         self.sevir_train = SEVIRTorchDataset(

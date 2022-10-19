@@ -26,23 +26,6 @@ default_enso_dir = os.path.join(cfg.datasets_dir, "icar_enso_2021")
 # unzipped file is saved in `default_enso_nc_dir`.
 default_enso_nc_dir = os.path.join(default_enso_dir, "enso_round1_train_20210201")
 
-def download_ENSO(save_dir=None):
-    r"""
-    Downloaded dataset is saved in save_dir/icar_enso_2021
-    """
-    if save_dir is None:
-        enso_dir = default_enso_dir
-    else:
-        enso_dir = os.path.join(save_dir, "icar_enso_2021")
-    if os.path.exists(enso_dir):
-        raise FileExistsError(f"Path to save ICAR-ENSO dataset {enso_dir} already exists!")
-    else:
-        os.makedirs(enso_dir)
-        os.system(f"aws s3 cp --no-sign-request s3://deep-earth/datasets/icar_enso_2021/enso_round1_train_20210201.zip "
-                  f"{enso_dir}")
-        os.system(f"unzip {os.path.join(enso_dir, 'enso_round1_train_20210201.zip')} "
-                  f"-d {enso_dir}")
-
 def scale_sst(sst):
     return (sst - SST_MIN) / (SST_MAX - SST_MIN)
 

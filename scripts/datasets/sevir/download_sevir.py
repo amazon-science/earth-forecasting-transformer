@@ -8,15 +8,15 @@ def get_parser():
     parser.add_argument("--save", default=None, type=str)
     return parser
 
+
 def main():
     parser = get_parser()
     args = parser.parse_args()
     if args.dataset == "sevir":
         download_SEVIR(save_dir=args.save)
-    elif args.dataset == "sevir_lr":
-        download_SEVIR_LR(save_dir=args.save)
     else:
         raise ValueError(f"Wrong dataset name {args.dataset}! Must be one of ('sevir', 'sevir_lr').")
+
 
 if __name__ == "__main__":
     main()

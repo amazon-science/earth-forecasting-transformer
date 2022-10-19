@@ -80,25 +80,22 @@ ICAR-ENSO consists of historical climate observation and stimulation data provid
 We forecast the SST anomalies up to 14 steps (2 steps more than one year for calculating three-month-moving-average),
 given a context of 12 steps (one year) of SST anomalies observations.
 
-We made a copy of ICAR-ENSO dataset available via AWS S3. You may download it via [AWS CLI](https://aws.amazon.com/cli/):
-```bash
-cd ROOT_DIR/earthformer
-aws s3 cp --no-sign-request s3://deep-earth/datasets/icar_enso_2021/enso_round1_train_20210201.zip ./datasets/
-```
+To download the dataset, you need to follow the instructions on the [official website](https://tianchi.aliyun.com/dataset/dataDetail?dataId=98942). 
+You can download a zip-file named `enso_round1_train_20210201.zip`. Put it under `./datasets/` and extract the zip file with the following command:
 
-Altervative 1: run our [script](./scripts/datasets/enso/download_enso.py) for downloading:
 ```bash
-cd ROOT_DIR/earthformer
-python ./scripts/datasets/enso/download_enso.py
+unzip datasets/enso_round1_train_20210201.zip -d datasets/icar_enso_2021
 ```
-Altervative 2: you may download the dataset directly following the instructions on the [official website](https://tianchi.aliyun.com/dataset/dataDetail?dataId=98942).
 
 ### EarthNet2021
 
-Alternative 1: Follow the [official instructions](https://www.earthnet.tech/docs/ds-download/) for downloading [EarthNet2021 dataset](https://www.earthnet.tech/docs/ch-task/) if `earthnet` is installed:
+You may follow the [official instructions](https://www.earthnet.tech/docs/ds-download/) for downloading [EarthNet2021 dataset](https://www.earthnet.tech/docs/ch-task/). 
+We recommend download it via the [earthnet_toolket](https://github.com/earthnet2021/earthnet-toolkit).
+
 ```python
-from earthformer.datasets.earthnet.earthnet_toolkit.download import Downloader as EN_Downloader
-EN_Downloader.get("./datasets/earthnet2021", "all")
+# python3 -m pip install earthnet
+import earthnet as en
+en.Downloader.get("./datasets/earthnet2021", "all")
 ```
 
 It requires 455G disk space in total.
