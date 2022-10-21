@@ -141,7 +141,7 @@ class SEVIRSkillScore(Metric):
     def update(self, pred: torch.Tensor, target: torch.Tensor):
         pred, target = self.preprocess(pred, target)
         for i, threshold in enumerate(self.threshold_list):
-            hits, misses, fas = self.calc_seq_hits_misses_fas(target, pred, threshold)
+            hits, misses, fas = self.calc_seq_hits_misses_fas(pred, target, threshold)
             self.hits[i] += hits
             self.misses[i] += misses
             self.fas[i] += fas
