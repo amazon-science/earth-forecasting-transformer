@@ -13,8 +13,8 @@ layout:
   layout: "NTHWC"
   data_seq_len: 30
 optim:
-  total_batch_size: 32
-  micro_batch_size: 8
+  total_batch_size: 64
+  micro_batch_size: 16
   seed: 0
   method: "adamw"
   lr: 0.0001
