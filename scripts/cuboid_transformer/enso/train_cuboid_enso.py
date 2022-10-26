@@ -558,7 +558,7 @@ class CuboidENSOPLModule(pl.LightningModule):
 
     def test_epoch_end(self, outputs):
         test_mse = self.test_mse.compute()
-        test_mae = self.test_mse.compute()
+        test_mae = self.test_mae.compute()
         nino_preds_list, nino_target_list = map(list, zip(*outputs))
         nino_preds_list = torch.cat(nino_preds_list, dim=0)
         nino_target_list = torch.cat(nino_target_list, dim=0)
