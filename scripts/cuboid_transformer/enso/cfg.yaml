@@ -11,7 +11,6 @@ layout:
   in_len: 12
   out_len: 14
   layout: "NTHWC"
-  data_seq_len: 30
 optim:
   total_batch_size: 64
   micro_batch_size: 16
