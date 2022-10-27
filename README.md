@@ -43,7 +43,8 @@ Lastly, install dependencies. For example, if you have CUDA 11.6 installed under
 
 ```bash
 python3 -m pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 -f https://download.pytorch.org/whl/torch_stable.html
-python3 -m pip install pytorch_lightning==1.6.4 opencv-python
+python3 -m pip install pytorch_lightning==1.6.4
+python3 -m pip install xarray netcdf4 opencv-python
 cd ROOT_DIR/earthformer
 python3 -m pip install -U -e . --no-build-isolation
 
@@ -55,7 +56,8 @@ If you have CUDA 11.7 installed under `/opt/cuda`, run:
 
 ```bash
 python3 -m pip install torch==1.13.0+cu117 torchvision==0.14.0+cu117 -f https://download.pytorch.org/whl/torch_stable.html
-python3 -m pip install pytorch_lightning==1.7.7 opencv-python
+python3 -m pip install pytorch_lightning==1.7.7 
+python3 -m pip install xarray netcdf4 opencv-python
 cd ROOT_DIR/earthformer
 
 # Install Apex
