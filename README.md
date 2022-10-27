@@ -22,18 +22,46 @@ Earthformer achieves strong results in synthetic datasets like MovingMNIST and N
 ![teaser](figures/teaser.png)
 
 ## Installation
+We recommend managing the environment through Anaconda. 
 
-We recommend to manage the environment through Anaconda
+First, find out where CUDA is installed on your machine. It is usually under `/usr/local/cuda` or `/opt/cuda`. 
+
+Next, check which version of CUDA you have installed on your machine:
+
 ```bash
-conda create -n earthformer python=3.9.12
+nvcc --version
+```
 
+Then, create a new conda environment:
+
+```bash
+conda create -n earthformer python=3.9
+conda activate earthformer
+```
+
+Lastly, install dependencies. For example, if you have CUDA 11.6 installed under `/usr/local/cuda`, run:
+
+```bash
 python3 -m pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 -f https://download.pytorch.org/whl/torch_stable.html
 python3 -m pip install pytorch_lightning==1.6.4
+python3 -m pip install xarray netcdf4 opencv-python
 cd ROOT_DIR/earthformer
 python3 -m pip install -U -e . --no-build-isolation
 
 # Install Apex
 CUDA_HOME=/usr/local/cuda python3 -m pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" pytorch-extension git+https://github.com/NVIDIA/apex.git
+```
+
+If you have CUDA 11.7 installed under `/opt/cuda`, run:
+
+```bash
+python3 -m pip install torch==1.13.0+cu117 torchvision==0.14.0+cu117 -f https://download.pytorch.org/whl/torch_stable.html
+python3 -m pip install pytorch_lightning==1.7.7 
+python3 -m pip install xarray netcdf4 opencv-python
+cd ROOT_DIR/earthformer
+
+# Install Apex
+CUDA_HOME=/opt/cuda python3 -m pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" pytorch-extension git+https://github.com/NVIDIA/apex.git
 ```
 
 ## Dataset
