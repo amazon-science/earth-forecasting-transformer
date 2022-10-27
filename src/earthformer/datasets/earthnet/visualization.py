@@ -145,7 +145,7 @@ def vis_earthnet_seq(
             targ = data[:, :, :, 2 if variable == "tg" else 3 if variable == "tn" else 4]
             targ = colorize(targ, colormap='coolwarm', mask_red=np.isnan(targ))
         else:
-            raise ValueError(f"Invalide variable {variable}!")
+            raise ValueError(f"Invalid variable {variable}!")
 
         grid = gallery(targ, ncols=ncols)
         ax.set_ylabel(ylabel=label, fontproperties=fontproperties, rotation=y_label_rotation)

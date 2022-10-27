@@ -10,8 +10,8 @@ import torch.nn.functional as F
 
 def _threshold(target, pred ,T):
     """
-    Returns binary tensors t,p the same shape as target & pred.  t = 1 whereever
-    target > t.  p =1 wherever pred > t.  p and t are set to 0 whereever EITHER
+    Returns binary tensors t,p the same shape as target & pred.  t = 1 wherever
+    target > t.  p =1 wherever pred > t.  p and t are set to 0 wherever EITHER
     t or p are nan.
     This is useful for counts that don't involve correct rejections.
 

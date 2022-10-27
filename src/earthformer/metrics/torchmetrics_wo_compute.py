@@ -81,7 +81,7 @@ class MetricsUpdateWithoutCompute(Metric):
         _update_count = self._update_count
         self.reset()
 
-        # local syncronization settings
+        # local synchronization settings
         self._to_sync = self.dist_sync_on_step
         self._should_unsync = False
         _temp_compute_on_cpu = self.compute_on_cpu

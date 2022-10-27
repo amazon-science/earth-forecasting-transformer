@@ -155,7 +155,7 @@ class SEVIRDataLoader:
             dict, downsample_dict.keys() == data_types. downsample_dict[key] is a Sequence of (t_factor, h_factor, w_factor),
             representing the downsampling factors of all dimensions.
         verbose
-            bool, verbose when openning raw data files
+            bool, verbose when opening raw data files
         """
         super(SEVIRDataLoader, self).__init__()
         if sevir_catalog is None:
@@ -391,7 +391,7 @@ class SEVIRDataLoader:
 
             data = data[tm, :]
             z = np.zeros(data.shape[0], dtype=np.int64)
-        else:  # compute z coodinate based on bin locaiton times
+        else:  # compute z coordinate based on bin location times
             z = np.digitize(t, self.lght_frame_times) - 1
             z[z == -1] = 0  # special case:  frame 0 uses lght from frame 1
 
