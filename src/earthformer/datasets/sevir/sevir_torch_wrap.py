@@ -114,10 +114,22 @@ class SEVIRTorchDataset(TorchDataset):
             num_workers=num_workers)
         return dataloader
 
+
+def check_aws():
+    r"""
+    Check if aws cli is installed.
+    """
+    if os.system("which aws") != 0:
+        raise RuntimeError("AWS CLI is not installed! Please install it first. See https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html")
+
+
 def download_SEVIR(save_dir=None):
     r"""
     Downloaded dataset is saved in save_dir/sevir
     """
+
+    check_aws()
+
     if save_dir is None:
         save_dir = cfg.datasets_dir
     sevir_dir = os.path.join(save_dir, "sevir")

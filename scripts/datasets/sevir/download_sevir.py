@@ -1,5 +1,5 @@
 import argparse
-from earthformer.datasets.sevir.sevir_torch_wrap import download_SEVIR, download_SEVIR_LR
+from earthformer.datasets.sevir.sevir_torch_wrap import download_SEVIR
 
 
 def get_parser():
