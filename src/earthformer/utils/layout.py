@@ -85,7 +85,7 @@ def change_layout_np(data,
 def change_layout_torch(data,
                         in_layout='NHWT', out_layout='NHWT',
                         ret_contiguous=False):
-    # first conver to 'NHWT'
+    # first convert to 'NHWT'
     if in_layout == 'NHWT':
         pass
     elif in_layout == 'NTHW':

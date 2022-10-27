@@ -71,7 +71,7 @@ class MovingMNIST(data.Dataset):
             index (int): Index
 
         Returns:
-            tuple: (seq, target) where sampled sequences are splitted into a seq
+            tuple: (seq, target) where sampled sequences are split into a seq
                     and target part
         """
 

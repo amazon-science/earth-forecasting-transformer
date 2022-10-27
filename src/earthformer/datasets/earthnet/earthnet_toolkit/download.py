@@ -83,7 +83,7 @@ class Downloader():
             
             for filename, dl_url, sha in tqdm(self.__URL__[split]):
                 if filename in progress_list and not overwrite:
-                    print(f"{filename} allready downloaded")
+                    print(f"{filename} already downloaded")
                     continue
                 tmp_path = os.path.join(self.data_dir, filename)
                 print("Downloading...")
