@@ -59,6 +59,7 @@ python3 -m pip install torch==1.13.0+cu117 torchvision==0.14.0+cu117 -f https://
 python3 -m pip install pytorch_lightning==1.7.7 
 python3 -m pip install xarray netcdf4 opencv-python
 cd ROOT_DIR/earthformer
+python3 -m pip install -U -e . --no-build-isolation
 
 # Install Apex
 CUDA_HOME=/opt/cuda python3 -m pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" pytorch-extension git+https://github.com/NVIDIA/apex.git
