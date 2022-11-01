@@ -95,8 +95,8 @@ class CuboidENSOPLModule(pl.LightningModule):
             initial_downsample_activation=model_cfg["initial_downsample_activation"],
             # initial_downsample_type=="conv"
             initial_downsample_scale=model_cfg["initial_downsample_scale"],
-            initial_downsample_conv_layers=model_cfg["initial_final_sample_num_conv"],
-            final_upsample_conv_layers=model_cfg["initial_final_sample_num_conv"] - 1,
+            initial_downsample_conv_layers=model_cfg["initial_downsample_conv_layers"],
+            final_upsample_conv_layers=model_cfg["final_upsample_conv_layers"],
             # misc
             padding_type=model_cfg["padding_type"],
             z_init_method=model_cfg["z_init_method"],
@@ -246,7 +246,8 @@ class CuboidENSOPLModule(pl.LightningModule):
         cfg.initial_downsample_type = "conv"
         cfg.initial_downsample_activation = "leaky"
         cfg.initial_downsample_scale = (1, 1, 2)
-        cfg.initial_final_sample_num_conv = 2
+        cfg.initial_downsample_conv_layers = 2
+        cfg.final_upsample_conv_layers = 1
         cfg.checkpoint_level = 2
         # initialization
         cfg.attn_linear_init_mode = "0"

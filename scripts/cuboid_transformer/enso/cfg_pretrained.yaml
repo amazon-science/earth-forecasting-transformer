@@ -94,7 +94,8 @@ model:
   initial_downsample_type: "conv"
   initial_downsample_activation: "leaky"
   initial_downsample_scale: [1, 1, 2]
-  initial_final_sample_num_conv: 2
+  initial_downsample_conv_layers: 2
+  final_upsample_conv_layers: 1
   checkpoint_level: 0
 
   attn_linear_init_mode: "0"
