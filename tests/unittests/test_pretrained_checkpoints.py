@@ -107,6 +107,7 @@ def test_sevir():
 
 def test_earthnet():
     micro_batch_size = 1
+    data_channels = 4
     pretrained_ckpt_name = "earthformer_earthnet2021.pt"
     device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     # Load pretrained model
@@ -128,7 +129,6 @@ def test_earthnet():
     # Test on SEVIR test
     dataset_cfg = OmegaConf.to_object(pretrained_cfg.dataset)
     layout_cfg = pretrained_cfg.layout
-    data_channels = pretrained_cfg.model.data_channels
     test_dataloader = get_EarthNet2021_dataloaders(
         dataloader_return_mode=dataset_cfg["return_mode"],
         data_aug_mode=dataset_cfg["data_aug_mode"],
