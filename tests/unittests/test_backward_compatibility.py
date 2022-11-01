@@ -1,6 +1,6 @@
 import os
 import unittest
-import OmegaConf
+from omegaconf import OmegaConf
 import torch
 from earthformer.config import cfg
 from earthformer.utils.checkpoint import s3_download_pretrained_ckpt
