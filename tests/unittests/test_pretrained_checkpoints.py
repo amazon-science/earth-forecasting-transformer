@@ -147,7 +147,7 @@ def test_enso():
 
     for batch in dm.test_dataloader():
         sst_seq, nino_target = batch
-        data_seq = sst_seq.float().unsqueeze(-1)
+        data_seq = sst_seq.float().unsqueeze(-1).to(device)
         x = data_seq[in_slice]
         y = data_seq[out_slice]
         y_hat = model(x)
@@ -157,10 +157,8 @@ def test_enso():
 
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
-    print(f"test_mse = {test_mse}")
-    print(f"test_mae = {test_mae}")
-    # assert test_mse < 3E-5
-    # assert test_mae < 3E-3
+    assert test_mse < 5E-4
+    assert test_mae < 2E-2
 
 def test_earthnet():
     micro_batch_size = 1
@@ -257,5 +255,3 @@ def test_earthnet():
     test_mae = test_mae_metrics.compute()
     assert test_mse < 5E-4
     assert test_mae < 2E-2
-
-test_enso()
