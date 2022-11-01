@@ -12,6 +12,7 @@ from earthformer.utils.layout import layout_to_in_out_slice
 from earthformer.cuboid_transformer.cuboid_transformer import CuboidTransformerModel
 from earthformer.cuboid_transformer.cuboid_transformer_unet_dec import CuboidTransformerAuxModel
 from earthformer.datasets.sevir.sevir_torch_wrap import SEVIRLightningDataModule
+from earthformer.datasets.enso.enso_dataloader import ENSOLightningDataModule
 from earthformer.datasets.earthnet.earthnet_dataloader import get_EarthNet2021_dataloaders
 
 
@@ -100,6 +101,62 @@ def test_sevir():
 
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
+    assert test_mse < 3E-5
+    assert test_mae < 3E-3
+
+def test_enso():
+    micro_batch_size = 1
+    pretrained_ckpt_name = "earthformer_icarenso2021.pt"
+    device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+    # Load pretrained model
+    pretrained_cfg_path = os.path.join(cfg.root_dir, "scripts", "cuboid_transformer", "enso", "cfg_pretrained.yaml")
+    pretrained_cfg = OmegaConf.load(open(pretrained_cfg_path, "r"))
+    model = config_cuboid_transformer(
+        cfg=pretrained_cfg,
+        model_type="CuboidTransformerModel").to(device)
+
+    if not os.path.exists(os.path.join(cfg.pretrained_checkpoints_dir, pretrained_ckpt_name)):
+        s3_download_pretrained_ckpt(ckpt_name=pretrained_ckpt_name,
+                                    save_dir=cfg.pretrained_checkpoints_dir,
+                                    exist_ok=False)
+    state_dict = torch.load(os.path.join(cfg.pretrained_checkpoints_dir, pretrained_ckpt_name),
+                            map_location=device)
+    missing_keys, unexpected_keys = model.load_state_dict(state_dict=state_dict, strict=False)
+    assert len(missing_keys) == 0, f"missing_keys {missing_keys} when loading pretrained state_dict."
+    assert len(unexpected_keys) == 0, f"missing_keys {unexpected_keys} when loading pretrained state_dict."
+    # Test on SEVIR test
+    dataset_cfg = OmegaConf.to_object(pretrained_cfg.dataset)
+    layout_cfg = pretrained_cfg.layout
+    dm = ENSOLightningDataModule(
+        in_len=dataset_cfg["in_len"],
+        out_len=dataset_cfg["out_len"],
+        in_stride=dataset_cfg["in_stride"],
+        out_stride=dataset_cfg["out_stride"],
+        train_samples_gap=dataset_cfg["train_samples_gap"],
+        eval_samples_gap=dataset_cfg["eval_samples_gap"],
+        normalize_sst=dataset_cfg["normalize_sst"],
+        batch_size=micro_batch_size,
+        num_workers=1)
+    dm.prepare_data()
+    dm.setup()
+    in_slice, out_slice = layout_to_in_out_slice(layout=layout_cfg.layout,
+                                                 in_len=layout_cfg.in_len,
+                                                 out_len=layout_cfg.out_len)
+    test_mse_metrics = torchmetrics.MeanSquaredError().to(device)
+    test_mae_metrics = torchmetrics.MeanAbsoluteError().to(device)
+
+    for batch in dm.test_dataloader():
+        sst_seq, nino_target = batch
+        data_seq = sst_seq.float().unsqueeze(-1)
+        x = data_seq[in_slice]
+        y = data_seq[out_slice]
+        y_hat = model(x)
+        test_mse_metrics(y_hat, y)
+        test_mae_metrics(y_hat, y)
+        break
+
+    test_mse = test_mse_metrics.compute()
+    test_mae = test_mae_metrics.compute()
     print(f"test_mse = {test_mse}")
     print(f"test_mae = {test_mae}")
     # assert test_mse < 3E-5
@@ -143,7 +200,7 @@ def test_earthnet():
         meso_crop=dataset_cfg["meso_crop"],
         fp16=dataset_cfg["fp16"],
         batch_size=micro_batch_size,
-        num_workers=1,
+        num_workers=8,
     )["test_dataloader"][0]
     in_slice, out_slice = layout_to_in_out_slice(layout=layout_cfg.layout,
                                                  in_len=layout_cfg.in_len,
@@ -152,7 +209,7 @@ def test_earthnet():
     test_mae_metrics = torchmetrics.MeanAbsoluteError().to(device)
 
     for batch in test_dataloader:
-        highresdynamic = batch["highresdynamic"]
+        highresdynamic = batch["highresdynamic"].to(device)
         seq = highresdynamic[..., :data_channels]
         # mask from dataloader: 1 for mask and 0 for non-masked
         mask = highresdynamic[..., data_channels: data_channels + 1][out_slice]
@@ -161,9 +218,9 @@ def test_earthnet():
         target_seq = seq[out_slice]
 
         # process aux data
-        highresstatic = batch["highresstatic"]  # (b c h w)
-        mesodynamic = batch["mesodynamic"]  # (b t h w c)
-        mesostatic = batch["mesostatic"]  # (b c h w)
+        highresstatic = batch["highresstatic"].to(device)  # (b c h w)
+        mesodynamic = batch["mesodynamic"].to(device)  # (b t h w c)
+        mesostatic = batch["mesostatic"].to(device)  # (b c h w)
 
         mesodynamic_interp = rearrange(mesodynamic,
                                        "b t h w c -> b c t h w")
@@ -198,10 +255,7 @@ def test_earthnet():
 
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
-    print(f"test_mse = {test_mse}")
-    print(f"test_mae = {test_mae}")
-    # assert test_mse < 3E-5
-    # assert test_mae < 3E-3
+    assert test_mse < 5E-4
+    assert test_mae < 2E-2
 
-test_sevir()
-test_earthnet()
+test_enso()
