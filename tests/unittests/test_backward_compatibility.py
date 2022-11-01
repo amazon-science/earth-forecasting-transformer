@@ -17,19 +17,19 @@ class CuboidTransformerBackwardCompatibility(unittest.TestCase):
         model_cfg = OmegaConf.to_object(OmegaConf.load(open(pretrained_cfg_path, "r")).model)
         num_blocks = len(model_cfg["enc_depth"])
         if isinstance(model_cfg["self_pattern"], str):
-            enc_attn_patterns = [model_cfg["self_pattern"]] * num_blocks
+            enc_attn_patterns = [model_cfg.pop("self_pattern")] * num_blocks
         else:
-            enc_attn_patterns = OmegaConf.to_container(model_cfg["self_pattern"])
+            enc_attn_patterns = OmegaConf.to_container(model_cfg.pop("self_pattern"))
         model_cfg["enc_attn_patterns"] = enc_attn_patterns
         if isinstance(model_cfg["cross_self_pattern"], str):
-            dec_self_attn_patterns = [model_cfg["cross_self_pattern"]] * num_blocks
+            dec_self_attn_patterns = [model_cfg.pop("cross_self_pattern")] * num_blocks
         else:
-            dec_self_attn_patterns = OmegaConf.to_container(model_cfg["cross_self_pattern"])
+            dec_self_attn_patterns = OmegaConf.to_container(model_cfg.pop("cross_self_pattern"))
         model_cfg["dec_self_attn_patterns"] = dec_self_attn_patterns
         if isinstance(model_cfg["cross_pattern"], str):
-            dec_cross_attn_patterns = [model_cfg["cross_pattern"]] * num_blocks
+            dec_cross_attn_patterns = [model_cfg.pop("cross_pattern")] * num_blocks
         else:
-            dec_cross_attn_patterns = OmegaConf.to_container(model_cfg["cross_pattern"])
+            dec_cross_attn_patterns = OmegaConf.to_container(model_cfg.pop("cross_pattern"))
         model_cfg["dec_cross_attn_patterns"] = dec_cross_attn_patterns
         model = CuboidTransformerModel(**model_cfg).to(device)
 
