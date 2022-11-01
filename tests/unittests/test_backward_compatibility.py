@@ -1,6 +1,7 @@
 import os
 import unittest
 from omegaconf import OmegaConf
+from tqdm import tqdm
 import numpy as np
 import torch
 import torchmetrics
@@ -81,11 +82,13 @@ class CuboidTransformerBackwardCompatibility(unittest.TestCase):
             train_test_split_date=dataset_cfg["train_test_split_date"],
             end_date=dataset_cfg["end_date"],
             num_workers=8, )
+        dm.prepare_data()
+        dm.setup()
         in_slice, out_slice = layout_to_in_out_slice(layout=layout_cfg["layout"],
                                                      in_len=layout_cfg["in_len"],
                                                      out_len=layout_cfg["out_len"])
-        threshold_list = dataset_cfg["threshold_list"],
-        metrics_list = dataset_cfg["metrics_list"],
+        threshold_list = dataset_cfg["threshold_list"]
+        metrics_list = dataset_cfg["metrics_list"]
         test_mse_metrics = torchmetrics.MeanSquaredError().to(device)
         test_mae_metrics = torchmetrics.MeanAbsoluteError().to(device)
         test_score_metrics = SEVIRSkillScore(
@@ -95,7 +98,7 @@ class CuboidTransformerBackwardCompatibility(unittest.TestCase):
             threshold_list=threshold_list,
             metrics_list=metrics_list,
             eps=1e-4, ).to(device)
-        for batch in dm.test_dataloader():
+        for batch in tqdm(dm.test_dataloader()):
             data_seq = batch['vil'].contiguous().to(device)
             x = data_seq[in_slice]
             y = data_seq[out_slice]
