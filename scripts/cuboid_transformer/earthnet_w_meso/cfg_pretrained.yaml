@@ -54,6 +54,7 @@ vis:
   test_example_data_idx_list: [0, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400]
   eval_example_only: false
 model:
+  data_channels: 4
   input_shape: [10, 128, 128, 4]
   target_shape: [20, 128, 128, 4]
   base_units: 256
