@@ -9,7 +9,6 @@ from earthformer.utils.checkpoint import s3_download_pretrained_ckpt
 from earthformer.utils.layout import layout_to_in_out_slice
 from earthformer.cuboid_transformer.cuboid_transformer import CuboidTransformerModel
 from earthformer.cuboid_transformer.cuboid_transformer_unet_dec import CuboidTransformerAuxModel
-from earthformer.metrics.sevir import SEVIRSkillScore
 from earthformer.datasets.sevir.sevir_torch_wrap import SEVIRLightningDataModule
 
 
@@ -84,17 +83,8 @@ def test_sevir():
     in_slice, out_slice = layout_to_in_out_slice(layout=layout_cfg["layout"],
                                                  in_len=layout_cfg["in_len"],
                                                  out_len=layout_cfg["out_len"])
-    threshold_list = dataset_cfg["threshold_list"]
-    metrics_list = dataset_cfg["metrics_list"]
     test_mse_metrics = torchmetrics.MeanSquaredError().to(device)
     test_mae_metrics = torchmetrics.MeanAbsoluteError().to(device)
-    test_score_metrics = SEVIRSkillScore(
-        mode=dataset_cfg["metrics_mode"],
-        seq_len=dataset_cfg["out_len"],
-        layout=dataset_cfg["layout"],
-        threshold_list=threshold_list,
-        metrics_list=metrics_list,
-        eps=1e-4, ).to(device)
 
     for batch in dm.test_dataloader():
         data_seq = batch['vil'].contiguous().to(device)
@@ -103,24 +93,9 @@ def test_sevir():
         y_hat = model(x)
         test_mse_metrics(y_hat, y)
         test_mae_metrics(y_hat, y)
-        test_score_metrics(y_hat, y)
         break
 
-    unittest_results_dict = {}
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
-    print(f"test_mse = {test_mse}")
-    unittest_results_dict["test_mse"] = test_mse
-    print(f"test_mae = {test_mae}")
-    unittest_results_dict["test_mae"] = test_mae
-    test_score = test_score_metrics.compute()
-    for metrics in metrics_list:
-        for thresh in threshold_list:
-            score_mean = np.mean(test_score[thresh][metrics]).item()
-            print(f"test_{metrics}_{thresh} = {score_mean}")
-            unittest_results_dict[f"test_{metrics}_{thresh}"] = score_mean
-        score_avg_mean = test_score.get("avg", None)
-        if score_avg_mean is not None:
-            score_avg_mean = np.mean(score_avg_mean[metrics]).item()
-            print(f"test_{metrics}_avg = {score_avg_mean}")
-            unittest_results_dict[f"test_{metrics}_avg"] = score_avg_mean
+    assert test_mse < 3E-5
+    assert test_mae < 3E-3
