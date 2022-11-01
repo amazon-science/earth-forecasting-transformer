@@ -67,7 +67,7 @@ model:
   dec_depth: [1, 1]
   enc_use_inter_ffn: true
   dec_use_inter_ffn: true
-  dec_hierarchical_pos_embed: true
+  dec_hierarchical_pos_embed: false
 
   downsample: 2
   downsample_type: "patch_merge"

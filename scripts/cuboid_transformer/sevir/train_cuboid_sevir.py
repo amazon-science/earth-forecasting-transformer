@@ -71,6 +71,7 @@ class CuboidSEVIRPLModule(pl.LightningModule):
             dec_depth=model_cfg["dec_depth"],
             enc_use_inter_ffn=model_cfg["enc_use_inter_ffn"],
             dec_use_inter_ffn=model_cfg["dec_use_inter_ffn"],
+            dec_hierarchical_pos_embed=model_cfg["dec_hierarchical_pos_embed"],
             downsample=model_cfg["downsample"],
             downsample_type=model_cfg["downsample_type"],
             enc_attn_patterns=enc_attn_patterns,
