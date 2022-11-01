@@ -74,7 +74,7 @@ model:
   self_pattern: "axial"
   cross_self_pattern: "axial"
   cross_pattern: "cross_1x1"
-  cross_last_n_frames: null
+  dec_cross_last_n_frames: null
 
   attn_drop: 0.1
   proj_drop: 0.1
