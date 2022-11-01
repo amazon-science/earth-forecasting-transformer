@@ -45,7 +45,7 @@ Lastly, install dependencies. For example, if you have CUDA 11.6 installed under
 python3 -m pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 -f https://download.pytorch.org/whl/torch_stable.html
 python3 -m pip install pytorch_lightning==1.6.4
 python3 -m pip install xarray netcdf4 opencv-python
-cd ROOT_DIR/earthformer
+cd ROOT_DIR/earth-forecasting-transformer
 python3 -m pip install -U -e . --no-build-isolation
 
 # Install Apex
@@ -58,7 +58,7 @@ If you have CUDA 11.7 installed under `/opt/cuda`, run:
 python3 -m pip install torch==1.13.0+cu117 torchvision==0.14.0+cu117 -f https://download.pytorch.org/whl/torch_stable.html
 python3 -m pip install pytorch_lightning==1.7.7 
 python3 -m pip install xarray netcdf4 opencv-python
-cd ROOT_DIR/earthformer
+cd ROOT_DIR/earth-forecasting-transformer
 python3 -m pip install -U -e . --no-build-isolation
 
 # Install Apex
@@ -80,7 +80,7 @@ where $\boldsymbol{x}\_{i}$ is the spatial coordinates of the $i$-th digit, $G$ 
 
 Run the following commands to generate N-body MNIST dataset.
 ```bash
-cd ROOT_DIR/earthformer
+cd ROOT_DIR/earth-forecasting-transformer
 python ./scripts/datasets/nbody/generate_nbody_dataset.py --cfg ./scripts/datasets/nbody/cfg.yaml
 ```
 
@@ -91,7 +91,7 @@ The resolution is thus $13\times 384\times 384\rightarrow 12\times 384\times 384
 
 To download SEVIR dataset from AWS S3, run:
 ```bash
-cd ROOT_DIR/earthformer
+cd ROOT_DIR/earth-forecasting-transformer
 python ./scripts/datasets/sevir/download_sevir.py --dataset sevir
 ```
 
