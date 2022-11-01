@@ -18,7 +18,8 @@ layout:
   in_len: 10
   out_len: 20
   layout: "NTHWC"
-  data_seq_len: 30
+  img_height: 128
+  img_width: 128
 optim:
   total_batch_size: 32
   micro_batch_size: 2
