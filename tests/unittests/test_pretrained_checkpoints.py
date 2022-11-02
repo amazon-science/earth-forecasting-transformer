@@ -47,7 +47,7 @@ def test_sevir():
     pretrained_ckpt_name = "earthformer_sevir.pt"
     device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     # Load pretrained model
-    pretrained_cfg_path = os.path.join(cfg.root_dir, "scripts", "cuboid_transformer", "sevir", "cfg_pretrained.yaml")
+    pretrained_cfg_path = os.path.join(cfg.root_dir, "scripts", "cuboid_transformer", "sevir", "earthformer_sevir_v1.yaml")
     pretrained_cfg = OmegaConf.load(open(pretrained_cfg_path, "r"))
     model = config_cuboid_transformer(
         cfg=pretrained_cfg,
@@ -109,7 +109,7 @@ def test_enso():
     pretrained_ckpt_name = "earthformer_icarenso2021.pt"
     device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     # Load pretrained model
-    pretrained_cfg_path = os.path.join(cfg.root_dir, "scripts", "cuboid_transformer", "enso", "cfg_pretrained.yaml")
+    pretrained_cfg_path = os.path.join(cfg.root_dir, "scripts", "cuboid_transformer", "enso", "earthformer_enso_v1.yaml")
     pretrained_cfg = OmegaConf.load(open(pretrained_cfg_path, "r"))
     model = config_cuboid_transformer(
         cfg=pretrained_cfg,
@@ -166,7 +166,7 @@ def test_earthnet():
     pretrained_ckpt_name = "earthformer_earthnet2021.pt"
     device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     # Load pretrained model
-    pretrained_cfg_path = os.path.join(cfg.root_dir, "scripts", "cuboid_transformer", "earthnet_w_meso", "cfg_pretrained.yaml")
+    pretrained_cfg_path = os.path.join(cfg.root_dir, "scripts", "cuboid_transformer", "earthnet_w_meso", "earthformer_earthnet_v1.yaml")
     pretrained_cfg = OmegaConf.load(open(pretrained_cfg_path, "r"))
     model = config_cuboid_transformer(
         cfg=pretrained_cfg,
