@@ -70,7 +70,7 @@ class CuboidNBodyPLModule(pl.LightningModule):
             enc_attn_patterns=enc_attn_patterns,
             dec_self_attn_patterns=dec_self_attn_patterns,
             dec_cross_attn_patterns=dec_cross_attn_patterns,
-            dec_cross_last_n_frames=model_cfg["cross_last_n_frames"],
+            dec_cross_last_n_frames=model_cfg["dec_cross_last_n_frames"],
             dec_use_first_self_attn=model_cfg["dec_use_first_self_attn"],
             num_heads=model_cfg["num_heads"],
             attn_drop=model_cfg["attn_drop"],
@@ -94,8 +94,8 @@ class CuboidNBodyPLModule(pl.LightningModule):
             initial_downsample_activation=model_cfg["initial_downsample_activation"],
             # initial_downsample_type=="conv"
             initial_downsample_scale=model_cfg["initial_downsample_scale"],
-            initial_downsample_conv_layers=model_cfg["initial_final_sample_num_conv"],
-            final_upsample_conv_layers=model_cfg["initial_final_sample_num_conv"] - 1,
+            initial_downsample_conv_layers=model_cfg["initial_downsample_conv_layers"],
+            final_upsample_conv_layers=model_cfg["final_upsample_conv_layers"],
             # misc
             padding_type=model_cfg["padding_type"],
             z_init_method=model_cfg["z_init_method"],
@@ -214,7 +214,7 @@ class CuboidNBodyPLModule(pl.LightningModule):
         cfg.self_pattern = 'axial'
         cfg.cross_self_pattern = 'axial'
         cfg.cross_pattern = 'cross_1x1'
-        cfg.cross_last_n_frames = None
+        cfg.dec_cross_last_n_frames = None
 
         cfg.attn_drop = 0.1
         cfg.proj_drop = 0.1
@@ -234,7 +234,8 @@ class CuboidNBodyPLModule(pl.LightningModule):
         cfg.initial_downsample_type = "conv"
         cfg.initial_downsample_activation = "leaky"
         cfg.initial_downsample_scale = 2
-        cfg.initial_final_sample_num_conv = 2
+        cfg.initial_downsample_conv_layers = 2
+        cfg.final_upsample_conv_layers = 1
         cfg.checkpoint_level = 2
         # initialization
         cfg.attn_linear_init_mode = "0"

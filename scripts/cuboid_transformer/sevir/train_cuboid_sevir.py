@@ -77,7 +77,7 @@ class CuboidSEVIRPLModule(pl.LightningModule):
             enc_attn_patterns=enc_attn_patterns,
             dec_self_attn_patterns=dec_self_attn_patterns,
             dec_cross_attn_patterns=dec_cross_attn_patterns,
-            dec_cross_last_n_frames=model_cfg["cross_last_n_frames"],
+            dec_cross_last_n_frames=model_cfg["dec_cross_last_n_frames"],
             dec_use_first_self_attn=model_cfg["dec_use_first_self_attn"],
             num_heads=model_cfg["num_heads"],
             attn_drop=model_cfg["attn_drop"],
@@ -261,7 +261,7 @@ class CuboidSEVIRPLModule(pl.LightningModule):
         cfg.self_pattern = 'axial'
         cfg.cross_self_pattern = 'axial'
         cfg.cross_pattern = 'cross_1x1'
-        cfg.cross_last_n_frames = None
+        cfg.dec_cross_last_n_frames = None
 
         cfg.attn_drop = 0.1
         cfg.proj_drop = 0.1
