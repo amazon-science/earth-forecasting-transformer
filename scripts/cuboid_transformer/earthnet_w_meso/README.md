@@ -8,7 +8,7 @@ MASTER_ADDR=localhost MASTER_PORT=10001 python ./scripts/cuboid_transformer/eart
 Or run the following command to directly load pretrained checkpoint for test.
 ```bash
 cd ROOT_DIR/earth-forecasting-transformer
-MASTER_ADDR=localhost MASTER_PORT=10001 python ./scripts/cuboid_transformer/earthnet_w_meso/train_cuboid_earthnet.py --gpus 2 --cfg ./scripts/cuboid_transformer/earthnet_w_meso/earthformer_earthnet_v1.yaml --pretrained --save tmp_earthnet_w_meso
+MASTER_ADDR=localhost MASTER_PORT=10001 python ./scripts/cuboid_transformer/earthnet_w_meso/train_cuboid_earthnet.py --gpus 2 --pretrained --save tmp_earthnet_w_meso
 ```
 Run the tensorboard command to upload experiment records
 ```bash
