@@ -145,6 +145,7 @@ dmypy.json
 /datasets/sevir_lr/
 /datasets/earthnet2021/
 /datasets/icar_enso_2021/
+/tests/unittests/test_pretrained_checkpoints_data/
 
 # pretrained checkpoints
 *.pt
