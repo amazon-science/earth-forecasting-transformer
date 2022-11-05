@@ -21,7 +21,7 @@ def s3_download_unittest_data(data_name):
     test_data_path = os.path.join(test_data_dir, data_name)
     if not os.path.exists(test_data_path):
         os.makedirs(test_data_dir, exist_ok=True)
-        os.system(f"aws s3 cp --no-sign-request s3://deep-earth/experiments/earthformer/unittest/{data_name} "
+        os.system(f"aws s3 cp --no-sign-request s3://deep-earth/experiments/earthformer/unittests/{data_name} "
                   f"{test_data_dir}")
 
 def config_cuboid_transformer(cfg, model_type="CuboidTransformerModel"):
