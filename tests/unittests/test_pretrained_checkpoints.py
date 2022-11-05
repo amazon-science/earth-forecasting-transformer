@@ -93,8 +93,8 @@ def test_sevir():
             break
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
-    assert test_mse < 3E-5
-    assert test_mae < 3E-3
+    assert test_mse < 1E-2
+    assert test_mae < 5E-2
 
 def test_enso():
     pretrained_ckpt_name = "earthformer_icarenso2021.pt"
@@ -220,4 +220,4 @@ def test_earthnet():
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
     assert test_mse < 5E-4
-    assert test_mae < 2E-2
+    assert test_mae < 1E-2
