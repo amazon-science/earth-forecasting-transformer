@@ -1,3 +1,4 @@
+# Configurations for pretrained checkpoint. Please do not modify it.
 dataset:
   dataset_name: "sevir"
   img_height: 384

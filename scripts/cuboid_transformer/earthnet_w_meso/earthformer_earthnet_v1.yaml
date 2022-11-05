@@ -1,3 +1,4 @@
+# Configurations for pretrained checkpoint. Please do not modify it.
 dataset:
   return_mode: "default"
   data_aug_mode: null

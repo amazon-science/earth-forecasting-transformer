@@ -1,3 +1,4 @@
+# Configurations for pretrained checkpoint. Please do not modify it.
 dataset:
   in_len: 12
   out_len: 14
