@@ -53,7 +53,7 @@ def config_cuboid_transformer(cfg, model_type="CuboidTransformerModel"):
         raise ValueError(f"Invalid model_type {model_type}. Must be 'CuboidTransformerModel' or ''.")
     return model
 
-def test_sevir():
+def tmp_test_sevir():
     pretrained_ckpt_name = "earthformer_sevir.pt"
     test_data_name = "unittest_sevir_data_bs1_idx0to31.pt"
     s3_download_unittest_data(data_name=test_data_name)
@@ -121,7 +121,7 @@ def test_enso():
     missing_keys, unexpected_keys = model.load_state_dict(state_dict=state_dict, strict=False)
     assert len(missing_keys) == 0, f"missing_keys {missing_keys} when loading pretrained state_dict."
     assert len(unexpected_keys) == 0, f"missing_keys {unexpected_keys} when loading pretrained state_dict."
-    # Test on SEVIR test
+    # Test on ENSO test
     layout_cfg = pretrained_cfg.layout
     in_slice, out_slice = layout_to_in_out_slice(layout=layout_cfg.layout,
                                                  in_len=layout_cfg.in_len,
@@ -146,7 +146,7 @@ def test_enso():
     assert test_mse < 5E-4
     assert test_mae < 2E-2
 
-def test_earthnet():
+def tmp_test_earthnet():
     data_channels = 4
     pretrained_ckpt_name = "earthformer_earthnet2021.pt"
     test_data_name = "unittest_earthnet2021_data_bs1_idx0to31.pt"
@@ -169,7 +169,7 @@ def test_earthnet():
     missing_keys, unexpected_keys = model.load_state_dict(state_dict=state_dict, strict=False)
     assert len(missing_keys) == 0, f"missing_keys {missing_keys} when loading pretrained state_dict."
     assert len(unexpected_keys) == 0, f"missing_keys {unexpected_keys} when loading pretrained state_dict."
-    # Test on SEVIR test
+    # Test on EarthNet2021 test
     layout_cfg = pretrained_cfg.layout
     in_slice, out_slice = layout_to_in_out_slice(layout=layout_cfg.layout,
                                                  in_len=layout_cfg.in_len,
