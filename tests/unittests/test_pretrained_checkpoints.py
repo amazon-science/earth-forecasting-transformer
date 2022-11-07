@@ -65,7 +65,7 @@ def tmp_test_sevir():
     model = config_cuboid_transformer(
         cfg=pretrained_cfg,
         model_type="CuboidTransformerModel").to(device)
-
+    model.eval()
     if not os.path.exists(os.path.join(cfg.pretrained_checkpoints_dir, pretrained_ckpt_name)):
         s3_download_pretrained_ckpt(ckpt_name=pretrained_ckpt_name,
                                     save_dir=cfg.pretrained_checkpoints_dir,
@@ -84,16 +84,17 @@ def tmp_test_sevir():
     test_mae_metrics = torchmetrics.MeanAbsoluteError().to(device)
     test_data = torch.load(test_data_path)
     counter = 0
-    for batch in test_data:
-        data_seq = batch['vil'].contiguous().to(device)
-        x = data_seq[in_slice]
-        y = data_seq[out_slice]
-        y_hat = model(x)
-        test_mse_metrics(y_hat, y)
-        test_mae_metrics(y_hat, y)
-        counter += 1
-        if counter >= num_test_iter:
-            break
+    with torch.no_grad():
+        for batch in test_data:
+            data_seq = batch['vil'].contiguous().to(device)
+            x = data_seq[in_slice]
+            y = data_seq[out_slice]
+            y_hat = model(x)
+            test_mse_metrics(y_hat, y)
+            test_mae_metrics(y_hat, y)
+            counter += 1
+            if counter >= num_test_iter:
+                break
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
     assert test_mse < 1E-2
@@ -111,6 +112,7 @@ def test_enso():
     model = config_cuboid_transformer(
         cfg=pretrained_cfg,
         model_type="CuboidTransformerModel").to(device)
+    model.eval()
 
     if not os.path.exists(os.path.join(cfg.pretrained_checkpoints_dir, pretrained_ckpt_name)):
         s3_download_pretrained_ckpt(ckpt_name=pretrained_ckpt_name,
@@ -130,23 +132,24 @@ def test_enso():
     test_mae_metrics = torchmetrics.MeanAbsoluteError().to(device)
     test_data = torch.load(test_data_path)
     counter = 0
-    for batch in test_data:
-        sst_seq, nino_target = batch
-        data_seq = sst_seq.float().unsqueeze(-1).to(device)
-        x = data_seq[in_slice]
-        y = data_seq[out_slice]
-        y_hat = model(x)
-        test_mse_metrics(y_hat, y)
-        test_mae_metrics(y_hat, y)
-        counter += 1
-        if counter >= num_test_iter:
-            break
+    with torch.no_grad():
+        for batch in test_data:
+            sst_seq, nino_target = batch
+            data_seq = sst_seq.float().unsqueeze(-1).to(device)
+            x = data_seq[in_slice]
+            y = data_seq[out_slice]
+            y_hat = model(x)
+            test_mse_metrics(y_hat, y)
+            test_mae_metrics(y_hat, y)
+            counter += 1
+            if counter >= num_test_iter:
+                break
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
     assert test_mse < 5E-4
     assert test_mae < 2E-2
 
-def tmp_test_earthnet():
+def test_earthnet():
     data_channels = 4
     pretrained_ckpt_name = "earthformer_earthnet2021.pt"
     test_data_name = "unittest_earthnet2021_data_bs1_idx0to31.pt"
@@ -159,6 +162,7 @@ def tmp_test_earthnet():
     model = config_cuboid_transformer(
         cfg=pretrained_cfg,
         model_type="CuboidTransformerAuxModel").to(device)
+    model.eval()
 
     if not os.path.exists(os.path.join(cfg.pretrained_checkpoints_dir, pretrained_ckpt_name)):
         s3_download_pretrained_ckpt(ckpt_name=pretrained_ckpt_name,
@@ -178,48 +182,49 @@ def tmp_test_earthnet():
     test_mae_metrics = torchmetrics.MeanAbsoluteError().to(device)
     test_data = torch.load(test_data_path)
     counter = 0
-    for batch in test_data:
-        highresdynamic = batch["highresdynamic"].to(device)
-        seq = highresdynamic[..., :data_channels]
-        # mask from dataloader: 1 for mask and 0 for non-masked
-        mask = highresdynamic[..., data_channels: data_channels + 1][out_slice]
-        in_seq = seq[in_slice]
-        target_seq = seq[out_slice]
-        # process aux data
-        highresstatic = batch["highresstatic"].to(device)  # (b c h w)
-        mesodynamic = batch["mesodynamic"].to(device)  # (b t h w c)
-        mesostatic = batch["mesostatic"].to(device)  # (b c h w)
-        mesodynamic_interp = rearrange(mesodynamic,
-                                       "b t h w c -> b c t h w")
-        mesodynamic_interp = F.interpolate(mesodynamic_interp,
-                                           size=(layout_cfg.in_len + layout_cfg.out_len,
-                                                 layout_cfg.img_height,
-                                                 layout_cfg.img_width),
-                                           mode="nearest")
-        highresstatic_interp = rearrange(highresstatic,
-                                         "b c h w -> b c 1 h w")
-        highresstatic_interp = F.interpolate(highresstatic_interp,
-                                             size=(layout_cfg.in_len + layout_cfg.out_len,
-                                                   layout_cfg.img_height,
-                                                   layout_cfg.img_width),
-                                             mode="nearest")
-        mesostatic_interp = rearrange(mesostatic,
-                                      "b c h w -> b c 1 h w")
-        mesostatic_interp = F.interpolate(mesostatic_interp,
-                                          size=(layout_cfg.in_len + layout_cfg.out_len,
-                                                layout_cfg.img_height,
-                                                layout_cfg.img_width),
-                                          mode="nearest")
-        aux_data = torch.cat((highresstatic_interp, mesodynamic_interp, mesostatic_interp),
-                             dim=1)
-        aux_data = rearrange(aux_data,
-                             "b c t h w -> b t h w c")
-        pred_seq = model(in_seq, aux_data[in_slice], aux_data[out_slice])
-        test_mse_metrics(pred_seq * (1 - mask), target_seq * (1 - mask))
-        test_mae_metrics(pred_seq * (1 - mask), target_seq * (1 - mask))
-        counter += 1
-        if counter >= num_test_iter:
-            break
+    with torch.no_grad():
+        for batch in test_data:
+            highresdynamic = batch["highresdynamic"].to(device)
+            seq = highresdynamic[..., :data_channels]
+            # mask from dataloader: 1 for mask and 0 for non-masked
+            mask = highresdynamic[..., data_channels: data_channels + 1][out_slice]
+            in_seq = seq[in_slice]
+            target_seq = seq[out_slice]
+            # process aux data
+            highresstatic = batch["highresstatic"].to(device)  # (b c h w)
+            mesodynamic = batch["mesodynamic"].to(device)  # (b t h w c)
+            mesostatic = batch["mesostatic"].to(device)  # (b c h w)
+            mesodynamic_interp = rearrange(mesodynamic,
+                                           "b t h w c -> b c t h w")
+            mesodynamic_interp = F.interpolate(mesodynamic_interp,
+                                               size=(layout_cfg.in_len + layout_cfg.out_len,
+                                                     layout_cfg.img_height,
+                                                     layout_cfg.img_width),
+                                               mode="nearest")
+            highresstatic_interp = rearrange(highresstatic,
+                                             "b c h w -> b c 1 h w")
+            highresstatic_interp = F.interpolate(highresstatic_interp,
+                                                 size=(layout_cfg.in_len + layout_cfg.out_len,
+                                                       layout_cfg.img_height,
+                                                       layout_cfg.img_width),
+                                                 mode="nearest")
+            mesostatic_interp = rearrange(mesostatic,
+                                          "b c h w -> b c 1 h w")
+            mesostatic_interp = F.interpolate(mesostatic_interp,
+                                              size=(layout_cfg.in_len + layout_cfg.out_len,
+                                                    layout_cfg.img_height,
+                                                    layout_cfg.img_width),
+                                              mode="nearest")
+            aux_data = torch.cat((highresstatic_interp, mesodynamic_interp, mesostatic_interp),
+                                 dim=1)
+            aux_data = rearrange(aux_data,
+                                 "b c t h w -> b t h w c")
+            pred_seq = model(in_seq, aux_data[in_slice], aux_data[out_slice])
+            test_mse_metrics(pred_seq * (1 - mask), target_seq * (1 - mask))
+            test_mae_metrics(pred_seq * (1 - mask), target_seq * (1 - mask))
+            counter += 1
+            if counter >= num_test_iter:
+                break
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
     assert test_mse < 5E-4
