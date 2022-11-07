@@ -3,6 +3,8 @@ from omegaconf import OmegaConf
 
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 
+print("_CURR_DIR=", _CURR_DIR)
+
 cfg = OmegaConf.create()
 cfg.root_dir = os.path.abspath(os.path.join(_CURR_DIR, "..", ".."))
 cfg.datasets_dir = os.path.join(cfg.root_dir, "datasets")  # default directory for loading datasets
