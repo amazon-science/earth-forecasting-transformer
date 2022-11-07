@@ -10,6 +10,7 @@ from einops import rearrange
 from earthformer.config import cfg
 from earthformer.utils.checkpoint import s3_download_pretrained_ckpt
 from earthformer.utils.layout import layout_to_in_out_slice
+from earthformer.utils.utils import download
 from earthformer.cuboid_transformer.cuboid_transformer import CuboidTransformerModel
 from earthformer.cuboid_transformer.cuboid_transformer_unet_dec import CuboidTransformerAuxModel
 
@@ -21,8 +22,10 @@ def s3_download_unittest_data(data_name):
     test_data_path = os.path.join(test_data_dir, data_name)
     if not os.path.exists(test_data_path):
         os.makedirs(test_data_dir, exist_ok=True)
-        os.system(f"aws s3 cp --no-sign-request s3://deep-earth/experiments/earthformer/unittests/{data_name} "
-                  f"{test_data_dir}")
+        download(url=f"s3://deep-earth/experiments/earthformer/unittests/{data_name}", path=test_data_path)
+        # os.system(f"aws s3 cp --no-sign-request s3://deep-earth/experiments/earthformer/unittests/{data_name} "
+        #           f"{test_data_dir}")
+
 
 def config_cuboid_transformer(cfg, model_type="CuboidTransformerModel"):
     model_cfg = OmegaConf.to_object(cfg.model)
