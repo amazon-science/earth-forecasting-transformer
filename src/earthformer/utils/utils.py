@@ -6,6 +6,8 @@ import hashlib
 import sys
 import functools
 import uuid
+import requests
+
 
 if not sys.platform.startswith('win32'):
     # refer to https://github.com/untitaker/python-atomicwrites
@@ -170,8 +172,8 @@ def download(url: str,
     if overwrite or not os.path.exists(fname) or (sha1_hash and not sha1sum(fname) == sha1_hash):
         is_s3 = url.startswith('s3://')
         if is_s3:
-            from .boto3 import ensure_session
-            session = ensure_session()
+            import boto3
+            session = boto3.Session()
             s3 = session.resource('s3')
             if session.get_credentials() is None:
                 from botocore.handlers import disable_signing
