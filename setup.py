@@ -55,6 +55,9 @@ requirements = [
     'timm',
     'omegaconf',
     'matplotlib',
+    'awscli',
+    'boto3',
+    'botocore',
 ]
 
 setup(
