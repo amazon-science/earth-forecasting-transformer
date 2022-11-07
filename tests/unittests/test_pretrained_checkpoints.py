@@ -15,7 +15,7 @@ from earthformer.cuboid_transformer.cuboid_transformer import CuboidTransformerM
 from earthformer.cuboid_transformer.cuboid_transformer_unet_dec import CuboidTransformerAuxModel
 
 
-NUM_TEST_ITER = 32  # max = 32 since saved `unittest_data.pt` only contains the first 0 to 31 data entries.
+NUM_TEST_ITER = 16  # max = 32 since saved `unittest_data.pt` only contains the first 0 to 31 data entries.
 test_data_dir = os.path.join(cfg.root_dir, "tests", "unittests", "test_pretrained_checkpoints_data")
 
 def s3_download_unittest_data(data_name):
