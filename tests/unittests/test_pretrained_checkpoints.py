@@ -15,7 +15,7 @@ from earthformer.cuboid_transformer.cuboid_transformer import CuboidTransformerM
 from earthformer.cuboid_transformer.cuboid_transformer_unet_dec import CuboidTransformerAuxModel
 
 
-num_test_iter = 32  # max = 32 since saved `unittest_data.pt` only contains the first 0 to 31 data entries.
+NUM_TEST_ITER = 32  # max = 32 since saved `unittest_data.pt` only contains the first 0 to 31 data entries.
 test_data_dir = os.path.join(cfg.root_dir, "tests", "unittests", "test_pretrained_checkpoints_data")
 
 def s3_download_unittest_data(data_name):
@@ -51,7 +51,7 @@ def config_cuboid_transformer(cfg, model_type="CuboidTransformerModel"):
         raise ValueError(f"Invalid model_type {model_type}. Must be 'CuboidTransformerModel' or ''.")
     return model
 
-def tmp_test_sevir():
+def test_sevir():
     pretrained_ckpt_name = "earthformer_sevir.pt"
     test_data_name = "unittest_sevir_data_bs1_idx0to31.pt"
     s3_download_unittest_data(data_name=test_data_name)
@@ -91,7 +91,7 @@ def tmp_test_sevir():
             test_mse_metrics(y_hat, y)
             test_mae_metrics(y_hat, y)
             counter += 1
-            if counter >= num_test_iter:
+            if counter >= NUM_TEST_ITER:
                 break
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
@@ -140,7 +140,7 @@ def test_enso():
             test_mse_metrics(y_hat, y)
             test_mae_metrics(y_hat, y)
             counter += 1
-            if counter >= num_test_iter:
+            if counter >= NUM_TEST_ITER:
                 break
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
@@ -184,6 +184,7 @@ def test_earthnet():
         for batch in test_data:
             highresdynamic = batch["highresdynamic"].to(device)
             seq = highresdynamic[..., :data_channels]
+            print(seq.shape)
             # mask from dataloader: 1 for mask and 0 for non-masked
             mask = highresdynamic[..., data_channels: data_channels + 1][out_slice]
             in_seq = seq[in_slice]
@@ -221,7 +222,7 @@ def test_earthnet():
             test_mse_metrics(pred_seq * (1 - mask), target_seq * (1 - mask))
             test_mae_metrics(pred_seq * (1 - mask), target_seq * (1 - mask))
             counter += 1
-            if counter >= num_test_iter:
+            if counter >= NUM_TEST_ITER:
                 break
     test_mse = test_mse_metrics.compute()
     test_mae = test_mae_metrics.compute()
