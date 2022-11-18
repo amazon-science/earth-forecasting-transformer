@@ -31,6 +31,9 @@ from earthformer.datasets.sevir.sevir_torch_wrap import SEVIRLightningDataModule
 from earthformer.utils.apex_ddp import ApexDDPPlugin
 
 
+_curr_dir = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
+exps_dir = os.path.join(_curr_dir, "experiments")
+pretrained_checkpoints_dir = cfg.pretrained_checkpoints_dir
 pytorch_state_dict_name = "earthformer_sevir.pt"
 
 class CuboidSEVIRPLModule(pl.LightningModule):
@@ -175,7 +178,7 @@ class CuboidSEVIRPLModule(pl.LightningModule):
             eps=1e-4,)
 
     def configure_save(self, cfg_file_path=None):
-        self.save_dir = os.path.join(cfg.exps_dir, self.save_dir)
+        self.save_dir = os.path.join(exps_dir, self.save_dir)
         os.makedirs(self.save_dir, exist_ok=True)
         self.scores_dir = os.path.join(self.save_dir, 'scores')
         os.makedirs(self.scores_dir, exist_ok=True)
@@ -752,11 +755,11 @@ def main():
     trainer = Trainer(**trainer_kwargs)
     if args.pretrained:
         pretrained_ckpt_name = pytorch_state_dict_name
-        if not os.path.exists(os.path.join(cfg.pretrained_checkpoints_dir, pretrained_ckpt_name)):
+        if not os.path.exists(os.path.join(pretrained_checkpoints_dir, pretrained_ckpt_name)):
             s3_download_pretrained_ckpt(ckpt_name=pretrained_ckpt_name,
-                                        save_dir=cfg.pretrained_checkpoints_dir,
+                                        save_dir=pretrained_checkpoints_dir,
                                         exist_ok=False)
-        state_dict = torch.load(os.path.join(cfg.pretrained_checkpoints_dir, pretrained_ckpt_name),
+        state_dict = torch.load(os.path.join(pretrained_checkpoints_dir, pretrained_ckpt_name),
                                 map_location=torch.device("cpu"))
         pl_module.torch_nn_module.load_state_dict(state_dict=state_dict)
         trainer.test(model=pl_module,
