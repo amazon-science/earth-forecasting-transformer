@@ -134,6 +134,11 @@ dmypy.json
 
 # experiment results
 /experiments/
+/scripts/cuboid_transformer/moving_mnist/experiments/
+/scripts/cuboid_transformer/nbody/experiments/
+/scripts/cuboid_transformer/sevir/experiments/
+/scripts/cuboid_transformer/enso/experiments/
+/scripts/cuboid_transformer/earthnet_w_meso/experiments/
 
 # local documents
 /docs/
