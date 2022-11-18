@@ -52,6 +52,7 @@ def vis_earthnet_seq(
         If True tries to use the last channel from the cubes sat imgs as blue cloud mask, 1 where no clouds, 0 where there are clouds. Defaults to True.
     save_path:  str
         If given, saves PNG to this path. Defaults to None.
+
     Returns
     -------
     fig:    plt.Figure
