@@ -512,13 +512,13 @@ class EarthNet2021TestDataset(_BaseEarthNet2021Dataset):
             meso_crop=meso_crop,
             fp16=fp16, )
         if subset_name == "iid":
-            data_dir = self.default_iid_test_data_dir
+            data_dir = self.default_iid_test_data_dir if data_dir is None else data_dir
         elif subset_name == "ood":
-            data_dir = self.default_ood_test_data_dir
+            data_dir = self.default_ood_test_data_dir if data_dir is None else data_dir
         elif subset_name == "extreme":
-            data_dir = self.default_extreme_test_data_dir
+            data_dir = self.default_extreme_test_data_dir if data_dir is None else data_dir
         elif subset_name == "seasonal":
-            data_dir = self.default_seasonal_test_data_dir
+            data_dir = self.default_seasonal_test_data_dir if data_dir is None else data_dir
         else:
             assert subset_name is None  # Use user specified arg data_dir
         self.subset_name = subset_name
