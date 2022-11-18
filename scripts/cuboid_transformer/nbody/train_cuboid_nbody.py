@@ -26,6 +26,9 @@ from earthformer.datasets.nbody.nbody_mnist_torch_wrap import NBodyMovingMNISTLi
 from earthformer.utils.apex_ddp import ApexDDPPlugin
 
 
+_curr_dir = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
+exps_dir = os.path.join(_curr_dir, "experiments")
+
 class CuboidNBodyPLModule(pl.LightningModule):
 
     def __init__(self,
@@ -152,7 +155,7 @@ class CuboidNBodyPLModule(pl.LightningModule):
         self.test_ssim = torchmetrics.StructuralSimilarityIndexMeasure()
 
     def configure_save(self, cfg_file_path=None):
-        self.save_dir = os.path.join(cfg.exps_dir, self.save_dir)
+        self.save_dir = os.path.join(exps_dir, self.save_dir)
         os.makedirs(self.save_dir, exist_ok=True)
         self.scores_dir = os.path.join(self.save_dir, 'scores')
         os.makedirs(self.scores_dir, exist_ok=True)
