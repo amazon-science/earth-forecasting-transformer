@@ -23,6 +23,12 @@ Earthformer achieves strong results in synthetic datasets like MovingMNIST and N
 
 ![teaser](figures/teaser.png)
 
+
+## Tutorials
+
+- [Inference Tutorial of Earthformer on EarthNet2021](./scripts/cuboid_transformer/earthnet_w_meso/inference_tutorial_earthformer_earthnet2021.ipynb)
+
+
 ## Installation
 We recommend managing the environment through Anaconda. 
 
