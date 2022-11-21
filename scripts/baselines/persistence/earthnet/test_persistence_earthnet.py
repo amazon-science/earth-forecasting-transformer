@@ -21,7 +21,7 @@ from earthformer.baselines.persistence import Persistence
 from earthformer.datasets.earthnet.earthnet_dataloader import EarthNet2021LightningDataModule, get_EarthNet2021_dataloaders
 from earthformer.datasets.earthnet.earthnet_scores import EarthNet2021ScoreUpdateWithoutCompute
 from earthformer.datasets.earthnet.visualization import vis_earthnet_seq
-from earthformer.utils.apex_ddp import ApexDDPPlugin
+from earthformer.utils.apex_ddp import ApexDDPStrategy
 
 
 class PersistenceEarthNet2021PLModule(pl.LightningModule):
@@ -178,7 +178,7 @@ class PersistenceEarthNet2021PLModule(pl.LightningModule):
             # ddp
             accelerator="gpu",
             # strategy="ddp",
-            strategy=ApexDDPPlugin(find_unused_parameters=False, delay_allreduce=True),
+            strategy=ApexDDPStrategy(find_unused_parameters=False, delay_allreduce=True),
             # optimization
             max_epochs=1,
             check_val_every_n_epoch=1,

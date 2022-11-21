@@ -28,7 +28,7 @@ from earthformer.visualization.sevir.sevir_vis_seq import save_example_vis_resul
 from earthformer.metrics.sevir import SEVIRSkillScore
 from earthformer.cuboid_transformer.cuboid_transformer import CuboidTransformerModel
 from earthformer.datasets.sevir.sevir_torch_wrap import SEVIRLightningDataModule
-from earthformer.utils.apex_ddp import ApexDDPPlugin
+from earthformer.utils.apex_ddp import ApexDDPStrategy
 
 
 _curr_dir = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
@@ -450,7 +450,7 @@ class CuboidSEVIRPLModule(pl.LightningModule):
             # ddp
             accelerator="gpu",
             # strategy="ddp",
-            strategy=ApexDDPPlugin(find_unused_parameters=False, delay_allreduce=True),
+            strategy=ApexDDPStrategy(find_unused_parameters=False, delay_allreduce=True),
             # optimization
             max_epochs=self.oc.optim.max_epochs,
             check_val_every_n_epoch=self.oc.trainer.check_val_every_n_epoch,
