@@ -2,7 +2,7 @@
 # We will need to use the AMP implementation from apex because https://discuss.pytorch.org/t/using-torch-utils-checkpoint-checkpoint-with-dataparallel/78452
 
 from apex.parallel import DistributedDataParallel
-from pytorch_lightning.plugins.training_type import DDPPlugin
+from pytorch_lightning.strategies.ddp import DDPStrategy
 from pytorch_lightning.overrides.base import (
     _LightningModuleWrapperBase,
     _LightningPrecisionModuleWrapperBase,
@@ -19,7 +19,7 @@ def unwrap_lightning_module(wrapped_model):
     return model
 
 
-class ApexDDPPlugin(DDPPlugin):
+class ApexDDPStrategy(DDPStrategy):
     def _setup_model(self, model):
         return DistributedDataParallel(model, delay_allreduce=False)
 
@@ -33,5 +33,5 @@ if __name__ == "__main__":
     # when using `strategy="ddp"` in pl.
     import pytorch_lightning as pl
     trainer = pl.Trainer(
-        strategy=ApexDDPPlugin(find_unused_parameters=False, delay_allreduce=True),  # "ddp",
+        strategy=ApexDDPStrategy(find_unused_parameters=False, delay_allreduce=True),  # "ddp",
     )
