@@ -6,9 +6,9 @@
 
 By [Zhihan Gao](https://scholar.google.com/citations?user=P6ACUAUAAAAJ&hl=zh-CN), [Xingjian Shi](https://github.com/sxjscience), [Hao Wang](http://www.wanghao.in/), [Yi Zhu](https://bryanyzhu.github.io/), [Yuyang Wang](https://scholar.google.com/citations?user=IKUm624AAAAJ&hl=en), [Mu Li](https://github.com/mli), [Dit-Yan Yeung](https://scholar.google.com/citations?user=nEsOOx8AAAAJ&hl=en).
 
-This repo is the official implementation of ["Earthformer: Exploring Space-Time Transformers for Earth System Forecasting"](https://www.amazon.science/publications/earthformer-exploring-space-time-transformers-for-earth-system-forecasting) that will appear in NeurIPS 2022.
+This repo is the official implementation of ["Earthformer: Exploring Space-Time Transformers for Earth System Forecasting"](https://www.amazon.science/publications/earthformer-exploring-space-time-transformers-for-earth-system-forecasting) that will appear in NeurIPS 2022. 
 
-
+Check our [poster](https://deep-earth.s3.amazonaws.com/papers/earthformer_neurips2022/Earthformer_poster_NeurIPS22.pdf).
 
 ## Tutorials
 
@@ -139,8 +139,16 @@ Find detailed instructions in the corresponding training script folder
 - [ENSO](./scripts/cuboid_transformer/enso/README.md)
 - [EarthNet2021](./scripts/cuboid_transformer/earthnet_w_meso/README.md)
 
-## Inference with Pretrained Models
-TBA
+## Training Script and Pretrained Models
+
+Find detailed instructions in how to train the models or running inference with our pretrained models in the corresponding script folder.
+
+| Dataset       | Script Folder                                            | Pretrained Weights                                                                                                     | Config                                                                              |
+|---------------|----------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| SEVIR         | [scripts](./scripts/cuboid_transformer/sevir)            | [link](https://deep-earth.s3.amazonaws.com/experiments/earthformer/pretrained_checkpoints/earthformer_sevir.pt)        | [config](./scripts/cuboid_transformer/sevir/earthformer_sevir_v1.yaml)              |
+| ICAR-ENSO     | [scripts](./scripts/cuboid_transformer/enso)             | [link](https://deep-earth.s3.amazonaws.com/experiments/earthformer/pretrained_checkpoints/earthformer_icarenso2021.pt) | [config](./scripts/cuboid_transformer/enso/earthformer_enso_v1.yaml)                |
+| EarthNet2021  | [scripts](./scripts/cuboid_transformer/earthnet_w_meso)  | [link](https://deep-earth.s3.amazonaws.com/experiments/earthformer/pretrained_checkpoints/earthformer_earthnet2021.pt) | [config](./scripts/cuboid_transformer/earthnet_w_meso/earthformer_earthnet_v1.yaml) |
+| N-body MNIST  | [scripts](./scripts/cuboid_transformer/nbody)            | -                                                                                                                      | -                                                                                   |
 
 ## Citing Earthformer
 
