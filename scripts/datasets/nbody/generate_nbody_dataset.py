@@ -29,7 +29,7 @@ def duplicate_single_seq_dataset(npz_path, num_copies=64, save_path=None):
 
 def generate_nbody_dataset(save_dir=None, oc_file_path=None):
     if oc_file_path is None:
-        oc_file_path = os.path.join("..", "scripts", "cfg.yaml")
+        oc_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cfg.yaml")
     dataset_oc = OmegaConf.to_object(OmegaConf.load(open(oc_file_path, "r")).dataset)
     if save_dir is None:
         from earthformer.config import cfg
