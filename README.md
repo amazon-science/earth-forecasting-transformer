@@ -30,6 +30,10 @@ Earthformer achieves strong results in synthetic datasets like MovingMNIST and N
 ![teaser](figures/teaser.png)
 
 
+### Cuboid Attention Illustration
+
+![cuboid_attention_illustration](figures/cuboid_illustration.gif)
+
 ## Installation
 We recommend managing the environment through Anaconda. 
 
@@ -87,7 +91,9 @@ $\frac{d^2\boldsymbol{x}\_{i}}{dt^2} = - \sum\_{j\neq i}\frac{G m\_j (\boldsymbo
 
 where $\boldsymbol{x}\_{i}$ is the spatial coordinates of the $i$-th digit, $G$ is the gravitational constant, $m\_j$ is the mass of the $j$-th digit, $r$ is a constant representing the power scale in the gravitational law, $d\_{\text{soft}}$ is a small softening distance that ensures numerical stability.
 
-To download the N-body MNIST dataset used in our paper from AWS S3 run:
+The N-body MNIST dataset we used in the paper can be downloaded from https://deep-earth.s3.amazonaws.com/experiments/earthformer/nbody/nbody_paper.zip .
+
+In addition, you can also use the following script for downloading / extracting the data:
 ```bash
 cd ROOT_DIR/earth-forecasting-transformer
 python ./scripts/datasets/nbody/download_nbody_paper.py
