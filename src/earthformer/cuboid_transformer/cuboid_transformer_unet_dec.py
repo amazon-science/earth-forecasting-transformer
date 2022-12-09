@@ -703,7 +703,6 @@ class CuboidTransformerAuxModel(nn.Module):
             maxH=H_in, maxW=W_in, maxT=T_in)
         mem_shapes = self.encoder.get_mem_shapes()
 
-        self.z_proj = nn.Linear(mem_shapes[-1][-1], mem_shapes[-1][-1])
         self.dec_pos_embed = PosEmbed(
             embed_dim=mem_shapes[-1][-1], typ=pos_embed_type,
             maxT=T_out, maxH=mem_shapes[-1][1], maxW=mem_shapes[-1][2])
@@ -889,8 +888,6 @@ class CuboidTransformerAuxModel(nn.Module):
         self.enc_pos_embed.reset_parameters()
         self.decoder.reset_parameters()
         self.dec_pos_embed.reset_parameters()
-        apply_initialization(self.z_proj,
-                             linear_mode="0")
 
     def _interp_aux(self, aux_input, ref_shape):
         r"""
