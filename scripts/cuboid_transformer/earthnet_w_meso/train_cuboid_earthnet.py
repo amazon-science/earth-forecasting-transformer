@@ -104,7 +104,6 @@ class CuboidEarthNet2021PLModule(pl.LightningModule):
             initial_downsample_stack_conv_num_conv_list=model_cfg["initial_downsample_stack_conv_num_conv_list"],
             # misc
             padding_type=model_cfg["padding_type"],
-            z_init_method=model_cfg["z_init_method"],
             checkpoint_level=model_cfg["checkpoint_level"],
             pos_embed_type=model_cfg["pos_embed_type"],
             use_relative_pos=model_cfg["use_relative_pos"],
@@ -256,7 +255,6 @@ class CuboidEarthNet2021PLModule(pl.LightningModule):
         cfg.use_relative_pos = True
         cfg.self_attn_use_final_proj = True
 
-        cfg.z_init_method = 'zeros'  # The method for initializing the first input of the decoder
         cfg.checkpoint_level = 2
         # initial downsample and final upsample
         cfg.initial_downsample_type = "stack_conv"
