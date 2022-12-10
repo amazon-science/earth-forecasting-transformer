@@ -99,7 +99,6 @@ model:
   use_relative_pos: true
   self_attn_use_final_proj: true
 
-  z_init_method: "zeros"
   checkpoint_level: 0
 
   initial_downsample_type: "stack_conv"

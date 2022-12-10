@@ -572,7 +572,6 @@ class CuboidTransformerAuxModel(nn.Module):
                  use_global_self_attn=False,
                  separate_global_qkv=False,
                  global_dim_ratio=1,
-                 z_init_method='nearest_interp',
                  # # initial downsample and final upsample
                  initial_downsample_type="conv",
                  initial_downsample_activation="leaky",
@@ -614,8 +613,6 @@ class CuboidTransformerAuxModel(nn.Module):
             Shape of the input tensor. It will be (T_out, H, W, C_out)
         base_units
             The base units
-        z_init_method
-            How the initial input to the decoder is initialized
         """
         super(CuboidTransformerAuxModel, self).__init__()
         # initialization mode
@@ -632,8 +629,6 @@ class CuboidTransformerAuxModel(nn.Module):
             assert separate_global_qkv == True, \
                 f"Setting global_dim_ratio != 1 requires separate_global_qkv == True."
         self.global_dim_ratio = global_dim_ratio
-        self.z_init_method = z_init_method
-        assert self.z_init_method in ['zeros', 'nearest_interp', 'last', 'mean']
 
         self.input_shape = input_shape
         self.target_shape = target_shape
