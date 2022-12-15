@@ -63,7 +63,7 @@ def vis_earthnet_seq(
     fontproperties.set_size(font_size)
     # font.set_weight("bold")
 
-    default_layout = "NHWCT"
+    default_layout = "NTHWC"
     data_np_list = []
     label_list = []
     if context_np is not None:
@@ -93,14 +93,6 @@ def vis_earthnet_seq(
         figsize=figsize, dpi=dpi,
         constrained_layout=True)
     for data, label, ax in zip(data_np_list, label_list, axes):
-        hw = 128 if variable in ["rgb", "ndvi"] else 80
-        hw_idxs = [i for i, j in enumerate(data.shape) if j == hw]
-        assert (len(hw_idxs) > 1)
-        if len(hw_idxs) == 2 and hw_idxs != [1, 2]:
-            c_idx = [i for i, j in enumerate(data.shape) if j == min([j for j in data.shape if j != hw])][0]
-            t_idx = [i for i, j in enumerate(data.shape) if j == max([j for j in data.shape if j != hw])][0]
-            data = np.transpose(data, (t_idx, hw_idxs[0], hw_idxs[1], c_idx))
-
         if variable == "rgb":
             targ = np.stack([data[:, :, :, 2], data[:, :, :, 1], data[:, :, :, 0]], axis=-1)
             targ[targ < 0] = 0
