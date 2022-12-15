@@ -12,7 +12,7 @@ def layout_to_in_out_slice(layout, in_len, out_len=None):
     if out_len is None:
         out_slice[t_axis] = slice(in_len, None)
     else:
-        out_slice[t_axis] = slice(-out_len, None)
+        out_slice[t_axis] = slice(in_len, in_len + out_len)
     return in_slice, out_slice
 
 def change_layout_np(data,
