@@ -1,5 +1,6 @@
 """Code is adapted from https://github.com/earthnet2021/earthnet-toolkit."""
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
+from math import ceil
 import numpy as np
 import matplotlib.colors as clr
 import matplotlib.cm as cm
@@ -68,14 +69,15 @@ def colorize(data, colormap = "ndvi", mask_red = None, mask_blue = None):
 
 def gallery(array, ncols=10):
     nindex, height, width, intensity = array.shape
-    padded = np.zeros((nindex, height + 2, width + 2, intensity))
-    padded[:,1:-1,1:-1,:] = array
-    nindex, height, width, intensity = padded.shape
-    nrows = nindex//ncols
-    assert nindex == nrows*ncols
-    result = (padded.reshape(nrows, ncols, height, width, intensity)
+    nrows = ceil(nindex / ncols)
+    nindex_pad = nrows * ncols
+    height_pad = height + 2
+    width_pad = width + 2
+    padded = np.zeros((nindex_pad, height_pad, width_pad, intensity))
+    padded[:nindex,1:-1,1:-1,:] = array
+    result = (padded.reshape(nrows, ncols, height_pad, width_pad, intensity)
               .swapaxes(1,2)
-              .reshape(height*nrows, width*ncols, intensity))
+              .reshape(height_pad*nrows, width_pad*ncols, intensity))
     return result
 
 def cube_gallery(cube, variable = "rgb", vegetation_mask = None, cloud_mask = True, save_path = None):
