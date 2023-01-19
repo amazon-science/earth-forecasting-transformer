@@ -164,9 +164,8 @@ class NBodyMovingMNISTTorchDataset(Dataset):
                                 size=(self.img_size, self.img_size),
                                 mode="bicubic",
                                 align_corners=False)
-            ret = ret.squeeze().unsqueeze(-1)
-        ret[ret > 255.0] = 255.0
-        ret[ret < 0.0] = 0.0
+            ret = ret.squeeze(1).unsqueeze(-1)
+        ret.clamp_(0.0, 255.0)
         if self.rescale_01:
             ret /= 255.0
         return ret
