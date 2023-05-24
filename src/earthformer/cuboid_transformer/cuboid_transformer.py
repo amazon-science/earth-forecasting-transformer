@@ -80,14 +80,15 @@ class PosEmbed(nn.Module):
         h_idx = torch.arange(H, device=x.device)  # (H, C)
         w_idx = torch.arange(W, device=x.device)  # (W, C)
         if self.typ == 't+h+w':
-            return x + self.T_embed(t_idx).reshape(T, 1, 1, self.embed_dim)\
-                     + self.H_embed(h_idx).reshape(1, H, 1, self.embed_dim)\
-                     + self.W_embed(w_idx).reshape(1, 1, W, self.embed_dim)
+            return x + self.T_embed(t_idx).reshape(T, 1, 1, self.embed_dim) \
+                   + self.H_embed(h_idx).reshape(1, H, 1, self.embed_dim) \
+                   + self.W_embed(w_idx).reshape(1, 1, W, self.embed_dim)
         elif self.typ == 't+hw':
             spatial_idx = h_idx.unsqueeze(-1) * self.maxW + w_idx
             return x + self.T_embed(t_idx).reshape(T, 1, 1, self.embed_dim) + self.HW_embed(spatial_idx)
         else:
             raise NotImplementedError
+
 
 class PositionwiseFFN(nn.Module):
     """The Position-wise FFN layer used in Transformer-like architectures
@@ -99,6 +100,7 @@ class PositionwiseFFN(nn.Module):
     Also, if we use gated projection. We will use
         fc1_1 * act(fc1_2(data)) to map the data
     """
+
     def __init__(self,
                  units: int = 512,
                  hidden_size: int = 2048,
@@ -204,8 +206,10 @@ class PositionwiseFFN(nn.Module):
             out = self.layer_norm(out)
         return out
 
+
 class PatchMerging3D(nn.Module):
     """ Patch Merging Layer"""
+
     def __init__(self,
                  dim,
                  out_dim=None,
@@ -251,7 +255,7 @@ class PatchMerging3D(nn.Module):
         pad_t = (self.downsample[0] - T % self.downsample[0]) % self.downsample[0]
         pad_h = (self.downsample[1] - H % self.downsample[1]) % self.downsample[1]
         pad_w = (self.downsample[2] - W % self.downsample[2]) % self.downsample[2]
-        return (T + pad_t) // self.downsample[0], (H + pad_h) // self.downsample[1], (W + pad_w) // self.downsample[2],\
+        return (T + pad_t) // self.downsample[0], (H + pad_h) // self.downsample[1], (W + pad_w) // self.downsample[2], \
                self.out_dim
 
     def forward(self, x):
@@ -277,19 +281,20 @@ class PatchMerging3D(nn.Module):
             T += pad_t
             H += pad_h
             W += pad_w
-            x = _generalize_padding(x, pad_t, pad_w, pad_h, padding_type=self.padding_type)
+            x = _generalize_padding(x, pad_t, pad_h, pad_w, padding_type=self.padding_type)
 
         x = x.reshape((B,
                        T // self.downsample[0], self.downsample[0],
                        H // self.downsample[1], self.downsample[1],
                        W // self.downsample[2], self.downsample[2], C)) \
-             .permute(0, 1, 3, 5, 2, 4, 6, 7) \
-             .reshape(B, T // self.downsample[0], H // self.downsample[1], W // self.downsample[2],
-                      self.downsample[0] * self.downsample[1] * self.downsample[2] * C)
+            .permute(0, 1, 3, 5, 2, 4, 6, 7) \
+            .reshape(B, T // self.downsample[0], H // self.downsample[1], W // self.downsample[2],
+                     self.downsample[0] * self.downsample[1] * self.downsample[2] * C)
         x = self.norm(x)
         x = self.reduction(x)
 
         return x
+
 
 class Upsample3DLayer(nn.Module):
     """Upsampling based on nn.UpSampling and Conv3x3.
@@ -300,6 +305,7 @@ class Upsample3DLayer(nn.Module):
         x --> interpolation-3d (nearest) --> conv3x3x3(dim, out_dim)
 
     """
+
     def __init__(self,
                  dim,
                  out_dim,
@@ -379,6 +385,7 @@ class Upsample3DLayer(nn.Module):
                 return self.conv(self.up(x)).reshape(B, self.target_size[0], self.out_dim, self.target_size[1],
                                                      self.target_size[2]).permute(0, 2, 1, 3, 4)
 
+
 def cuboid_reorder(data, cuboid_size, strategy):
     """Reorder the tensor into (B, num_cuboids, bT * bH * bW, C)
 
@@ -417,7 +424,7 @@ def cuboid_reorder(data, cuboid_size, strategy):
             block_axis.append(2 * i + 1)
         else:
             raise NotImplementedError
-    data = data.reshape((B,) + tuple(intermediate_shape) + (C, ))
+    data = data.reshape((B,) + tuple(intermediate_shape) + (C,))
     reordered_data = data.permute((0,) + tuple(nblock_axis) + tuple(block_axis) + (7,))
     reordered_data = reordered_data.reshape((B, num_cuboids, cuboid_volume, C))
     return reordered_data
@@ -493,7 +500,7 @@ def compute_cuboid_self_attention_mask(data_shape, cuboid_size, shift_size, stra
     pad_w = (cuboid_size[2] - W % cuboid_size[2]) % cuboid_size[2]
     data_mask = None
     # Prepare data mask
-    if pad_t > 0  or pad_h > 0 or pad_w > 0:
+    if pad_t > 0 or pad_h > 0 or pad_w > 0:
         if padding_type == 'ignore':
             data_mask = torch.ones((1, T, H, W, 1), dtype=torch.bool, device=device)
             data_mask = F.pad(data_mask, (0, 0, 0, pad_w, 0, pad_h, 0, pad_t))
@@ -521,6 +528,7 @@ def compute_cuboid_self_attention_mask(data_shape, cuboid_size, shift_size, stra
     if padding_type == 'ignore':
         attn_mask = data_mask.unsqueeze(1) * data_mask.unsqueeze(2) * attn_mask
     return attn_mask
+
 
 def masked_softmax(att_score, mask, axis: int = -1):
     """Ignore the masked elements when calculating the softmax.
@@ -553,6 +561,7 @@ def masked_softmax(att_score, mask, axis: int = -1):
         att_weights = torch.softmax(att_score, dim=axis)
     return att_weights
 
+
 def update_cuboid_size_shift_size(data_shape, cuboid_size, shift_size, strategy):
     """Update the
 
@@ -584,6 +593,7 @@ def update_cuboid_size_shift_size(data_shape, cuboid_size, shift_size, strategy)
             new_shift_size[i] = 0
     return tuple(new_cuboid_size), tuple(new_shift_size)
 
+
 class CuboidSelfAttentionLayer(nn.Module):
     """Implements the cuboid self attention.
 
@@ -613,6 +623,7 @@ class CuboidSelfAttentionLayer(nn.Module):
      the vectors inside each individual cuboids will also attend to the global vectors so that they can peep into the global status of the system.
 
     """
+
     def __init__(self,
                  dim,
                  num_heads,
@@ -767,7 +778,7 @@ class CuboidSelfAttentionLayer(nn.Module):
         self.norm = get_norm_layer(norm_layer, in_channels=dim)
         if self.use_global_vector:
             self.global_vec_norm = get_norm_layer(norm_layer,
-                                                  in_channels=global_dim_ratio*dim)
+                                                  in_channels=global_dim_ratio * dim)
 
         self.checkpoint_level = checkpoint_level
         self.reset_parameters()
@@ -838,7 +849,7 @@ class CuboidSelfAttentionLayer(nn.Module):
                                                        padding_type=self.padding_type,
                                                        device=x.device)
         head_C = C_in // self.num_heads
-        qkv = self.qkv(reordered_x).reshape(B, num_cuboids, cuboid_volume, 3, self.num_heads, head_C)\
+        qkv = self.qkv(reordered_x).reshape(B, num_cuboids, cuboid_volume, 3, self.num_heads, head_C) \
             .permute(3, 0, 4, 1, 2, 5)  # (3, B, num_heads, num_cuboids, cuboid_volume, head_C)
         q, k, v = qkv[0], qkv[1], qkv[2]  # Each has shape (B, num_heads, num_cuboids, cuboid_volume, head_C)
         q = q * self.scale
@@ -846,62 +857,64 @@ class CuboidSelfAttentionLayer(nn.Module):
 
         if self.use_relative_pos:
             relative_position_bias = self.relative_position_bias_table[
-                self.relative_position_index[:cuboid_volume, :cuboid_volume].reshape(-1)]\
+                self.relative_position_index[:cuboid_volume, :cuboid_volume].reshape(-1)] \
                 .reshape(cuboid_volume, cuboid_volume, -1)  # (cuboid_volume, cuboid_volume, num_head)
-            relative_position_bias = relative_position_bias.permute(2, 0, 1)\
+            relative_position_bias = relative_position_bias.permute(2, 0, 1) \
                 .contiguous().unsqueeze(1)  # num_heads, 1, cuboid_volume, cuboid_volume
             attn_score = attn_score + relative_position_bias  # Shape (B, num_heads, num_cuboids, cuboid_volume, cuboid_volume)
 
         # Calculate the local to global attention
         if self.use_global_vector:
-            global_head_C = self.global_dim_ratio * head_C # take effect only separate_global_qkv = True
+            global_head_C = self.global_dim_ratio * head_C  # take effect only separate_global_qkv = True
             if self.separate_global_qkv:
-                l2g_q = self.l2g_q_net(reordered_x)\
-                    .reshape(B, num_cuboids, cuboid_volume, self.num_heads, head_C)\
+                l2g_q = self.l2g_q_net(reordered_x) \
+                    .reshape(B, num_cuboids, cuboid_volume, self.num_heads, head_C) \
                     .permute(0, 3, 1, 2, 4)  # (B, num_heads, num_cuboids, cuboid_volume, head_C)
                 l2g_q = l2g_q * self.scale
-                l2g_global_kv = self.l2g_global_kv_net(global_vectors)\
-                    .reshape(B, 1, num_global, 2, self.num_heads, head_C)\
+                l2g_global_kv = self.l2g_global_kv_net(global_vectors) \
+                    .reshape(B, 1, num_global, 2, self.num_heads, head_C) \
                     .permute(3, 0, 4, 1, 2, 5)  # Shape (2, B, num_heads, 1, N, head_C)
                 l2g_global_k, l2g_global_v = l2g_global_kv[0], l2g_global_kv[1]
-                g2l_global_q = self.g2l_global_q_net(global_vectors)\
-                    .reshape(B, num_global, self.num_heads, head_C)\
+                g2l_global_q = self.g2l_global_q_net(global_vectors) \
+                    .reshape(B, num_global, self.num_heads, head_C) \
                     .permute(0, 2, 1, 3)  # Shape (B, num_heads, N, head_C)
                 g2l_global_q = g2l_global_q * self.scale
                 # g2l_kv = self.g2l_kv_net(reordered_x)\
                 #     .reshape(B, num_cuboids, cuboid_volume, 2, self.num_heads, global_head_C)\
                 #     .permute(3, 0, 4, 1, 2, 5)  # (2, B, num_heads, num_cuboids, cuboid_volume, head_C)
                 # g2l_k, g2l_v = g2l_kv[0], g2l_kv[1]
-                g2l_k = self.g2l_k_net(reordered_x)\
-                    .reshape(B, num_cuboids, cuboid_volume, self.num_heads, head_C)\
+                g2l_k = self.g2l_k_net(reordered_x) \
+                    .reshape(B, num_cuboids, cuboid_volume, self.num_heads, head_C) \
                     .permute(0, 3, 1, 2, 4)  # (B, num_heads, num_cuboids, cuboid_volume, head_C)
                 g2l_v = self.g2l_v_net(reordered_x) \
                     .reshape(B, num_cuboids, cuboid_volume, self.num_heads, global_head_C) \
                     .permute(0, 3, 1, 2, 4)  # (B, num_heads, num_cuboids, cuboid_volume, global_head_C)
                 if self.use_global_self_attn:
-                    g2g_global_qkv = self.g2g_global_qkv_net(global_vectors)\
-                    .reshape(B, 1, num_global, 3, self.num_heads, global_head_C)\
-                    .permute(3, 0, 4, 1, 2, 5)  # Shape (2, B, num_heads, 1, N, head_C)
+                    g2g_global_qkv = self.g2g_global_qkv_net(global_vectors) \
+                        .reshape(B, 1, num_global, 3, self.num_heads, global_head_C) \
+                        .permute(3, 0, 4, 1, 2, 5)  # Shape (2, B, num_heads, 1, N, head_C)
                     g2g_global_q, g2g_global_k, g2g_global_v = g2g_global_qkv[0], g2g_global_qkv[1], g2g_global_qkv[2]
                     g2g_global_q = g2g_global_q.squeeze(2) * self.scale
             else:
-                q_global, k_global, v_global = self.global_qkv(global_vectors)\
-                    .reshape(B, 1, num_global, 3, self.num_heads, head_C)\
+                q_global, k_global, v_global = self.global_qkv(global_vectors) \
+                    .reshape(B, 1, num_global, 3, self.num_heads, head_C) \
                     .permute(3, 0, 4, 1, 2, 5)  # Shape (3, B, num_heads, 1, N, head_C)
                 q_global = q_global.squeeze(2) * self.scale
                 l2g_q, g2l_k, g2l_v = q, k, v
                 g2l_global_q, l2g_global_k, l2g_global_v = q_global, k_global, v_global
                 if self.use_global_self_attn:
                     g2g_global_q, g2g_global_k, g2g_global_v = q_global, k_global, v_global
-            l2g_attn_score = l2g_q @ l2g_global_k.transpose(-2, -1)  # Shape (B, num_heads, num_cuboids, cuboid_volume, N)
+            l2g_attn_score = l2g_q @ l2g_global_k.transpose(-2,
+                                                            -1)  # Shape (B, num_heads, num_cuboids, cuboid_volume, N)
             attn_score_l2l_l2g = torch.cat((attn_score, l2g_attn_score),
                                            dim=-1)  # Shape (B, num_heads, num_cuboids, cuboid_volume, cuboid_volume + N)
             attn_mask_l2l_l2g = F.pad(attn_mask, (0, num_global), "constant", 1)
             v_l_g = torch.cat((v, l2g_global_v.expand(B, self.num_heads, num_cuboids, num_global, head_C)),
-                            dim=3)
+                              dim=3)
             # local to local and global attention
             attn_score_l2l_l2g = masked_softmax(attn_score_l2l_l2g, mask=attn_mask_l2l_l2g)
-            attn_score_l2l_l2g = self.attn_drop(attn_score_l2l_l2g)  # Shape (B, num_heads, num_cuboids, x_cuboid_volume, mem_cuboid_volume + K))
+            attn_score_l2l_l2g = self.attn_drop(
+                attn_score_l2l_l2g)  # Shape (B, num_heads, num_cuboids, x_cuboid_volume, mem_cuboid_volume + K))
             reordered_x = (attn_score_l2l_l2g @ v_l_g).permute(0, 2, 3, 1, 4) \
                 .reshape(B, num_cuboids, cuboid_volume, self.dim)
             # update global vectors
@@ -915,7 +928,9 @@ class CuboidSelfAttentionLayer(nn.Module):
                 g2l_attn_mask = g2l_attn_mask.reshape((-1,))
             else:
                 g2l_attn_mask = None
-            g2l_attn_score = g2l_global_q @ g2l_k.reshape(B, self.num_heads, num_cuboids * cuboid_volume, head_C).transpose(-2, -1)  # Shape (B, num_heads, N, num_cuboids * cuboid_volume)
+            g2l_attn_score = g2l_global_q @ g2l_k.reshape(B, self.num_heads, num_cuboids * cuboid_volume,
+                                                          head_C).transpose(-2,
+                                                                            -1)  # Shape (B, num_heads, N, num_cuboids * cuboid_volume)
             if self.use_global_self_attn:
                 g2g_attn_score = g2g_global_q @ g2g_global_k.squeeze(2).transpose(-2, -1)
                 g2all_attn_score = torch.cat((g2l_attn_score, g2g_attn_score),
@@ -933,11 +948,12 @@ class CuboidSelfAttentionLayer(nn.Module):
                 new_v = g2l_v.reshape(B, self.num_heads, num_cuboids * cuboid_volume, global_head_C)
             g2all_attn_score = masked_softmax(g2all_attn_score, mask=g2all_attn_mask)
             g2all_attn_score = self.global_attn_drop(g2all_attn_score)
-            new_global_vector = (g2all_attn_score @ new_v).permute(0, 2, 1, 3).\
-                reshape(B, num_global, self.global_dim_ratio*self.dim)
+            new_global_vector = (g2all_attn_score @ new_v).permute(0, 2, 1, 3). \
+                reshape(B, num_global, self.global_dim_ratio * self.dim)
         else:
             attn_score = masked_softmax(attn_score, mask=attn_mask)
-            attn_score = self.attn_drop(attn_score)  # Shape (B, num_heads, num_cuboids, cuboid_volume, cuboid_volume (+ K))
+            attn_score = self.attn_drop(
+                attn_score)  # Shape (B, num_heads, num_cuboids, cuboid_volume, cuboid_volume (+ K))
             reordered_x = (attn_score @ v).permute(0, 2, 3, 1, 4).reshape(B, num_cuboids, cuboid_volume, self.dim)
 
         if self.use_final_proj:
@@ -957,6 +973,7 @@ class CuboidSelfAttentionLayer(nn.Module):
         else:
             return x
 
+
 class StackCuboidSelfAttentionBlock(nn.Module):
     """
 
@@ -973,6 +990,7 @@ class StackCuboidSelfAttentionBlock(nn.Module):
     If we have enabled global memory vectors, each attention will be a
 
     """
+
     def __init__(self,
                  dim,
                  num_heads,
@@ -1009,7 +1027,7 @@ class StackCuboidSelfAttentionBlock(nn.Module):
         self.ffn_linear_init_mode = ffn_linear_init_mode
         self.norm_init_mode = norm_init_mode
 
-        assert len(block_cuboid_size[0]) > 0 and len(block_shift_size) > 0 and len(block_strategy) > 0,\
+        assert len(block_cuboid_size[0]) > 0 and len(block_shift_size) > 0 and len(block_strategy) > 0, \
             f'Format of the block cuboid size is not correct.' \
             f' block_cuboid_size={block_cuboid_size}'
         assert len(block_cuboid_size) == len(block_shift_size) == len(block_strategy)
@@ -1034,7 +1052,7 @@ class StackCuboidSelfAttentionBlock(nn.Module):
                     normalization=norm_layer,
                     pre_norm=True,
                     linear_init_mode=ffn_linear_init_mode,
-                    norm_init_mode=norm_init_mode,)
+                    norm_init_mode=norm_init_mode, )
                     for _ in range(self.num_attn)])
             if self.use_global_vector_ffn and self.use_global_vector:
                 self.global_ffn_l = nn.ModuleList(
@@ -1048,7 +1066,7 @@ class StackCuboidSelfAttentionBlock(nn.Module):
                         normalization=norm_layer,
                         pre_norm=True,
                         linear_init_mode=ffn_linear_init_mode,
-                        norm_init_mode=norm_init_mode,)
+                        norm_init_mode=norm_init_mode, )
                         for _ in range(self.num_attn)])
         else:
             self.ffn_l = nn.ModuleList(
@@ -1060,7 +1078,7 @@ class StackCuboidSelfAttentionBlock(nn.Module):
                     normalization=norm_layer,
                     pre_norm=True,
                     linear_init_mode=ffn_linear_init_mode,
-                    norm_init_mode=norm_init_mode,)])
+                    norm_init_mode=norm_init_mode, )])
             if self.use_global_vector_ffn and self.use_global_vector:
                 self.global_ffn_l = nn.ModuleList(
                     [PositionwiseFFN(
@@ -1072,7 +1090,7 @@ class StackCuboidSelfAttentionBlock(nn.Module):
                         normalization=norm_layer,
                         pre_norm=True,
                         linear_init_mode=ffn_linear_init_mode,
-                        norm_init_mode=norm_init_mode,)])
+                        norm_init_mode=norm_init_mode, )])
         self.attn_l = nn.ModuleList(
             [CuboidSelfAttentionLayer(
                 dim=dim, num_heads=num_heads,
@@ -1094,7 +1112,7 @@ class StackCuboidSelfAttentionBlock(nn.Module):
                 use_final_proj=use_final_proj,
                 attn_linear_init_mode=attn_linear_init_mode,
                 ffn_linear_init_mode=ffn_linear_init_mode,
-                norm_init_mode=norm_init_mode,)
+                norm_init_mode=norm_init_mode, )
                 for ele_cuboid_size, ele_shift_size, ele_strategy
                 in zip(block_cuboid_size, block_shift_size, block_strategy)])
 
@@ -1169,6 +1187,7 @@ class StackCuboidSelfAttentionBlock(nn.Module):
                     x = self.ffn_l[0](x)
                 return x
 
+
 @lru_cache()
 def compute_cuboid_cross_attention_mask(T_x, T_mem, H, W, n_temporal, cuboid_hw, shift_hw, strategy,
                                         padding_type, device):
@@ -1238,10 +1257,11 @@ def compute_cuboid_cross_attention_mask(T_x, T_mem, H, W, n_temporal, cuboid_hw,
     shift_mask = shift_mask.squeeze(-1).squeeze(0)  # num_cuboids, bH * bW
     shift_mask = (shift_mask.unsqueeze(1) - shift_mask.unsqueeze(2)) == 0  # num_cuboids, bH * bW, bH * bW
     bh_bw = cuboid_hw[0] * cuboid_hw[1]
-    attn_mask = shift_mask.reshape((num_cuboids, 1, bh_bw, 1, bh_bw)) * x_mask.reshape((num_cuboids, -1, bh_bw, 1, 1))\
+    attn_mask = shift_mask.reshape((num_cuboids, 1, bh_bw, 1, bh_bw)) * x_mask.reshape((num_cuboids, -1, bh_bw, 1, 1)) \
                 * mem_mask.reshape(num_cuboids, 1, 1, -1, bh_bw)
     attn_mask = attn_mask.reshape(num_cuboids, x_cuboid_volume, mem_cuboid_volume)
     return attn_mask
+
 
 class CuboidCrossAttentionLayer(nn.Module):
     """Implements the cuboid cross attention.
@@ -1263,6 +1283,7 @@ class CuboidCrossAttentionLayer(nn.Module):
     The complexity of the layer is O((T2 / n_t * Bh * Bw) * (T1 / n_t * Bh * Bw) * n_t (H / Bh) (W / Bw)) = O(T2 * T1 / n_t H W Bh Bw)
 
     """
+
     def __init__(self,
                  dim,
                  num_heads,
@@ -1349,7 +1370,8 @@ class CuboidCrossAttentionLayer(nn.Module):
         if use_relative_pos:
             # Create relative positional embedding bias table
             self.relative_position_bias_table = nn.Parameter(
-                torch.zeros((2 * max_temporal_relative - 1) * (2 * cuboid_hw[0] - 1) * (2 * cuboid_hw[1] - 1), num_heads))
+                torch.zeros((2 * max_temporal_relative - 1) * (2 * cuboid_hw[0] - 1) * (2 * cuboid_hw[1] - 1),
+                            num_heads))
             nn.init.trunc_normal_(self.relative_position_bias_table, std=.02)
 
             coords_t = torch.arange(max_temporal_relative)
@@ -1364,8 +1386,10 @@ class CuboidCrossAttentionLayer(nn.Module):
             relative_coords[:, :, 1] += self.cuboid_hw[0] - 1
             relative_coords[:, :, 2] += self.cuboid_hw[1] - 1
             # shape is (cuboid_volume, cuboid_volume)
-            relative_position_index = relative_coords[:, :, 0] * (2 * self.cuboid_hw[0] - 1) * (2 * self.cuboid_hw[1] - 1)\
-                                      + relative_coords[:, :, 1] * (2 * self.cuboid_hw[1] - 1) + relative_coords[:, :, 2]
+            relative_position_index = relative_coords[:, :, 0] * (2 * self.cuboid_hw[0] - 1) * (
+                        2 * self.cuboid_hw[1] - 1) \
+                                      + relative_coords[:, :, 1] * (2 * self.cuboid_hw[1] - 1) + relative_coords[:, :,
+                                                                                                 2]
             self.register_buffer("relative_position_index", relative_position_index)
 
         self.q_proj = nn.Linear(dim, dim, bias=qkv_bias)
@@ -1451,7 +1475,7 @@ class CuboidCrossAttentionLayer(nn.Module):
         cuboid_hw = self.cuboid_hw
         n_temporal = self.n_temporal
         shift_hw = self.shift_hw
-        assert B_mem == B and H == H_mem and W == W_mem and C_in == C_mem,\
+        assert B_mem == B and H == H_mem and W == W_mem and C_in == C_mem, \
             f'Shape of memory and the input tensor does not match. x.shape={x.shape}, mem.shape={mem.shape}'
         pad_t_mem = (n_temporal - T_mem % n_temporal) % n_temporal
         pad_t_x = (n_temporal - T_x % n_temporal) % n_temporal
@@ -1491,9 +1515,12 @@ class CuboidCrossAttentionLayer(nn.Module):
         head_C = C_in // self.num_heads
 
         # (2, B, num_heads, num_cuboids, mem_cuboid_volume, head_C)
-        kv = self.kv_proj(reordered_mem).reshape(B, num_cuboids, mem_cuboid_volume, 2, self.num_heads, head_C).permute(3, 0, 4, 1, 2, 5)
+        kv = self.kv_proj(reordered_mem).reshape(B, num_cuboids, mem_cuboid_volume, 2, self.num_heads, head_C).permute(
+            3, 0, 4, 1, 2, 5)
         k, v = kv[0], kv[1]  # Each has shape (B, num_heads, num_cuboids, mem_cuboid_volume, head_C)
-        q = self.q_proj(reordered_x).reshape(B, num_cuboids, x_cuboid_volume, self.num_heads, head_C).permute(0, 3, 1, 2, 4)  # Shape (B, num_heads, num_cuboids, x_cuboids_volume, head_C)
+        q = self.q_proj(reordered_x).reshape(B, num_cuboids, x_cuboid_volume, self.num_heads, head_C).permute(0, 3, 1,
+                                                                                                              2,
+                                                                                                              4)  # Shape (B, num_heads, num_cuboids, x_cuboids_volume, head_C)
         q = q * self.scale
         attn_score = q @ k.transpose(-2, -1)  # Shape (B, num_heads, num_cuboids, x_cuboids_volume, mem_cuboid_volume)
 
@@ -1501,7 +1528,8 @@ class CuboidCrossAttentionLayer(nn.Module):
             relative_position_bias = self.relative_position_bias_table[
                 self.relative_position_index[:x_cuboid_volume, :mem_cuboid_volume].reshape(-1)].reshape(
                 x_cuboid_volume, mem_cuboid_volume, -1)  # (cuboid_volume, cuboid_volume, num_head)
-            relative_position_bias = relative_position_bias.permute(2, 0, 1).contiguous().unsqueeze(1)  # num_heads, 1, x_cuboids_volume, mem_cuboid_volume
+            relative_position_bias = relative_position_bias.permute(2, 0, 1).contiguous().unsqueeze(
+                1)  # num_heads, 1, x_cuboids_volume, mem_cuboid_volume
             attn_score = attn_score + relative_position_bias  # Shape (B, num_heads, num_cuboids, x_cuboids_volume, mem_cuboid_volume)
 
         if self.use_global_vector:
@@ -1515,23 +1543,28 @@ class CuboidCrossAttentionLayer(nn.Module):
                     .permute(3, 0, 4, 1, 2, 5)  # Shape (2, B, num_heads, 1, N, head_C)
                 l2g_global_k, l2g_global_v = l2g_global_kv[0], l2g_global_kv[1]
             else:
-                kv_global = self.kv_proj(mem_global_vectors).reshape(B, 1, num_global, 2, self.num_heads, head_C).permute(3, 0, 4, 1, 2, 5)
+                kv_global = self.kv_proj(mem_global_vectors).reshape(B, 1, num_global, 2, self.num_heads,
+                                                                     head_C).permute(3, 0, 4, 1, 2, 5)
                 l2g_global_k, l2g_global_v = kv_global[0], kv_global[1]  # Shape (B, num_heads, 1, num_global, head_C)
                 l2g_q = q
-            l2g_attn_score = l2g_q @ l2g_global_k.transpose(-2, -1)  # Shape (B, num_heads, num_cuboids, x_cuboid_volume, num_global)
+            l2g_attn_score = l2g_q @ l2g_global_k.transpose(-2,
+                                                            -1)  # Shape (B, num_heads, num_cuboids, x_cuboid_volume, num_global)
             attn_score_l2l_l2g = torch.cat((attn_score, l2g_attn_score),
                                            dim=-1)
-            attn_mask_l2l_l2g = F.pad(attn_mask, (0, num_global), "constant", 1)  # Shape (num_cuboids, x_cuboid_volume, mem_cuboid_volume + num_global)
+            attn_mask_l2l_l2g = F.pad(attn_mask, (0, num_global), "constant",
+                                      1)  # Shape (num_cuboids, x_cuboid_volume, mem_cuboid_volume + num_global)
             v_l_g = torch.cat((v, l2g_global_v.expand(B, self.num_heads, num_cuboids, num_global, head_C)),
                               dim=3)  # Shape (B, num_heads, num_cuboids, mem_cuboid_volume + num_global, head_C)
             # local to local and global attention
             attn_score_l2l_l2g = masked_softmax(attn_score_l2l_l2g, mask=attn_mask_l2l_l2g)
-            attn_score_l2l_l2g = self.attn_drop(attn_score_l2l_l2g)  # Shape (B, num_heads, num_cuboids, x_cuboid_volume, mem_cuboid_volume + K))
+            attn_score_l2l_l2g = self.attn_drop(
+                attn_score_l2l_l2g)  # Shape (B, num_heads, num_cuboids, x_cuboid_volume, mem_cuboid_volume + K))
             reordered_x = (attn_score_l2l_l2g @ v_l_g).permute(0, 2, 3, 1, 4) \
                 .reshape(B, num_cuboids, x_cuboid_volume, self.dim)
         else:
             attn_score = masked_softmax(attn_score, mask=attn_mask)
-            attn_score = self.attn_drop(attn_score)  # Shape (B, num_heads, num_cuboids, x_cuboid_volume, mem_cuboid_volume)
+            attn_score = self.attn_drop(
+                attn_score)  # Shape (B, num_heads, num_cuboids, x_cuboid_volume, mem_cuboid_volume)
             reordered_x = (attn_score @ v).permute(0, 2, 3, 1, 4).reshape(B, num_cuboids, x_cuboid_volume, self.dim)
         reordered_x = self.proj_drop(self.proj(reordered_x))
         # Step-5: Shift back and slice
@@ -1543,6 +1576,7 @@ class CuboidCrossAttentionLayer(nn.Module):
             x = shifted_x
         x = _generalize_unpadding(x, pad_t=pad_t_x, pad_h=pad_h, pad_w=pad_w, padding_type=self.padding_type)
         return x
+
 
 class DownSampling3D(nn.Module):
     """The 3D down-sampling layer.
@@ -1556,6 +1590,7 @@ class DownSampling3D(nn.Module):
 
     For any options, if the target_size is the same as the input size, we will skip the bilinear downsampling layer.
     """
+
     def __init__(self, original_size, target_size, in_channels, out_dim, mid_dim=16, act_type='leaky',
                  arch_type='2d_interp_2d'):
         """
@@ -1618,7 +1653,8 @@ class DownSampling3D(nn.Module):
             x = self.act(self.inter_conv(x.permute(0, 4, 1, 2, 3)))  # Shape(B, mid_dim, T, H, W)
             if self.original_size[0] == self.target_size[0]:
                 # Use 2D interpolation
-                x = F.interpolate(x.permute(0, 2, 1, 3, 4).reshape(B * T, self.mid_dim, H, W), size=self.target_size[1:])  # Shape (B * T_new, mid_dim, H_new, W_new)
+                x = F.interpolate(x.permute(0, 2, 1, 3, 4).reshape(B * T, self.mid_dim, H, W),
+                                  size=self.target_size[1:])  # Shape (B * T_new, mid_dim, H_new, W_new)
             else:
                 # Use 3D interpolation
                 x = F.interpolate(x, size=self.target_size)  # Shape (B, mid_dim, T_new, H_new, W_new)
@@ -1632,15 +1668,17 @@ class DownSampling3D(nn.Module):
                 x = F.interpolate(x, size=self.target_size[1:])  # Shape (B * T_new, mid_dim, H_new, W_new)
             else:
                 # Use 3D interpolation
-                x = F.interpolate(x.reshape(B, T, C_in, H, W).permute(0, 2, 1, 3, 4), size=self.target_size)  # Shape (B, mid_dim, T_new, H_new, W_new)
+                x = F.interpolate(x.reshape(B, T, C_in, H, W).permute(0, 2, 1, 3, 4),
+                                  size=self.target_size)  # Shape (B, mid_dim, T_new, H_new, W_new)
                 x = x.permute(0, 2, 1, 3, 4).reshape(B * self.target_size[0], self.mid_dim,
                                                      self.target_size[1], self.target_size[2])
         else:
             raise NotImplementedError
         x = self.conv(x)  # Shape (B * T_new, out_dim, H_new, W_new)
-        x = x.reshape(B, self.target_size[0], self.out_dim, self.target_size[1], self.target_size[2])\
-             .permute(0, 2, 1, 3, 4)
+        x = x.reshape(B, self.target_size[0], self.out_dim, self.target_size[1], self.target_size[2]) \
+            .permute(0, 2, 1, 3, 4)
         return x
+
 
 class CuboidTransformerEncoder(nn.Module):
     """Encoder of the CuboidTransformer
@@ -1648,6 +1686,7 @@ class CuboidTransformerEncoder(nn.Module):
     x --> attn_block --> patch_merge --> attn_block --> patch_merge --> ... --> out
 
     """
+
     def __init__(self,
                  input_shape,
                  base_units=128,
@@ -1773,8 +1812,8 @@ class CuboidTransformerEncoder(nn.Module):
                 raise NotImplementedError
             if self.use_global_vector:
                 self.down_layer_global_proj = nn.ModuleList(
-                    [nn.Linear(in_features=global_dim_ratio*self.block_units[i],
-                               out_features=global_dim_ratio*self.block_units[i + 1])
+                    [nn.Linear(in_features=global_dim_ratio * self.block_units[i],
+                               out_features=global_dim_ratio * self.block_units[i + 1])
                      for i in range(self.num_blocks - 1)])
 
         if block_attn_patterns is not None:
@@ -1796,19 +1835,19 @@ class CuboidTransformerEncoder(nn.Module):
             if not isinstance(block_cuboid_size[0][0], (list, tuple)):
                 block_cuboid_size = [block_cuboid_size for _ in range(self.num_blocks)]
             else:
-                assert len(block_cuboid_size) == self.num_blocks,\
+                assert len(block_cuboid_size) == self.num_blocks, \
                     f'Incorrect input format! Received block_cuboid_size={block_cuboid_size}'
 
             if not isinstance(block_strategy[0][0], (list, tuple)):
                 block_strategy = [block_strategy for _ in range(self.num_blocks)]
             else:
-                assert len(block_strategy) == self.num_blocks,\
+                assert len(block_strategy) == self.num_blocks, \
                     f'Incorrect input format! Received block_strategy={block_strategy}'
 
             if not isinstance(block_shift_size[0][0], (list, tuple)):
                 block_shift_size = [block_shift_size for _ in range(self.num_blocks)]
             else:
-                assert len(block_shift_size) == self.num_blocks,\
+                assert len(block_shift_size) == self.num_blocks, \
                     f'Incorrect input format! Received block_shift_size={block_shift_size}'
         self.block_cuboid_size = block_cuboid_size
         self.block_strategy = block_strategy
@@ -1918,6 +1957,7 @@ class CuboidTransformerEncoder(nn.Module):
                     x = self.down_layers[i](x)
             return out
 
+
 class StackCuboidCrossAttentionBlock(nn.Module):
     """A stack of cuboid cross attention layers.
 
@@ -1935,6 +1975,7 @@ class StackCuboidCrossAttentionBlock(nn.Module):
            |             |    |            |             |  |           |
            |-------------|----|------------|-- ----------|--|-----------|
     """
+
     def __init__(self,
                  dim,
                  num_heads,
@@ -1972,7 +2013,7 @@ class StackCuboidCrossAttentionBlock(nn.Module):
         self.ffn_linear_init_mode = ffn_linear_init_mode
         self.norm_init_mode = norm_init_mode
 
-        assert len(block_cuboid_hw[0]) > 0 and len(block_shift_hw) > 0 and len(block_strategy) > 0,\
+        assert len(block_cuboid_hw[0]) > 0 and len(block_shift_hw) > 0 and len(block_strategy) > 0, \
             f'Incorrect format.' \
             f' block_cuboid_hw={block_cuboid_hw}, block_shift_hw={block_shift_hw}, block_strategy={block_strategy}'
         assert len(block_cuboid_hw) == len(block_shift_hw) == len(block_strategy)
@@ -1992,7 +2033,7 @@ class StackCuboidCrossAttentionBlock(nn.Module):
                     normalization=norm_layer,
                     pre_norm=True,
                     linear_init_mode=ffn_linear_init_mode,
-                    norm_init_mode=norm_init_mode,)
+                    norm_init_mode=norm_init_mode, )
                     for _ in range(self.num_attn)])
         else:
             self.ffn_l = nn.ModuleList(
@@ -2006,7 +2047,7 @@ class StackCuboidCrossAttentionBlock(nn.Module):
                     normalization=norm_layer,
                     pre_norm=True,
                     linear_init_mode=ffn_linear_init_mode,
-                    norm_init_mode=norm_init_mode,)])
+                    norm_init_mode=norm_init_mode, )])
         self.attn_l = nn.ModuleList(
             [CuboidCrossAttentionLayer(
                 dim=dim,
@@ -2030,7 +2071,7 @@ class StackCuboidCrossAttentionBlock(nn.Module):
                 use_relative_pos=use_relative_pos,
                 attn_linear_init_mode=attn_linear_init_mode,
                 ffn_linear_init_mode=ffn_linear_init_mode,
-                norm_init_mode=norm_init_mode,)
+                norm_init_mode=norm_init_mode, )
                 for ele_cuboid_hw, ele_shift_hw, ele_strategy, ele_n_temporal
                 in zip(block_cuboid_hw, block_shift_hw, block_strategy, block_n_temporal)])
 
@@ -2080,6 +2121,7 @@ class StackCuboidCrossAttentionBlock(nn.Module):
                 x = self.ffn_l[0](x)
         return x
 
+
 class CuboidTransformerDecoder(nn.Module):
     """Decoder of the CuboidTransformer.
 
@@ -2092,6 +2134,7 @@ class CuboidTransformerDecoder(nn.Module):
                                    mem --> |
 
     """
+
     def __init__(self,
                  target_temporal_length,
                  mem_shapes,
@@ -2217,19 +2260,19 @@ class CuboidTransformerDecoder(nn.Module):
             if not isinstance(block_self_cuboid_size[0][0], (list, tuple)):
                 block_self_cuboid_size = [block_self_cuboid_size for _ in range(self.num_blocks)]
             else:
-                assert len(block_self_cuboid_size) == self.num_blocks,\
+                assert len(block_self_cuboid_size) == self.num_blocks, \
                     f'Incorrect input format! Received block_self_cuboid_size={block_self_cuboid_size}'
 
             if not isinstance(block_self_cuboid_strategy[0][0], (list, tuple)):
                 block_self_cuboid_strategy = [block_self_cuboid_strategy for _ in range(self.num_blocks)]
             else:
-                assert len(block_self_cuboid_strategy) == self.num_blocks,\
+                assert len(block_self_cuboid_strategy) == self.num_blocks, \
                     f'Incorrect input format! Received block_self_cuboid_strategy={block_self_cuboid_strategy}'
 
             if not isinstance(block_self_shift_size[0][0], (list, tuple)):
                 block_self_shift_size = [block_self_shift_size for _ in range(self.num_blocks)]
             else:
-                assert len(block_self_shift_size) == self.num_blocks,\
+                assert len(block_self_shift_size) == self.num_blocks, \
                     f'Incorrect input format! Received block_self_shift_size={block_self_shift_size}'
         self_blocks = []
         for i in range(self.num_blocks):
@@ -2238,7 +2281,7 @@ class CuboidTransformerDecoder(nn.Module):
                 ele_depth = depth[i] - 1
             else:
                 ele_depth = depth[i]
-            stack_cuboid_blocks =\
+            stack_cuboid_blocks = \
                 [StackCuboidSelfAttentionBlock(
                     dim=self.mem_shapes[i][-1],
                     num_heads=num_heads,
@@ -2435,6 +2478,7 @@ class CuboidTransformerDecoder(nn.Module):
                     x = self.hierarchical_pos_embed_l[i - 1](x)
         return x
 
+
 class InitialEncoder(nn.Module):
     def __init__(self,
                  dim,
@@ -2515,6 +2559,7 @@ class InitialEncoder(nn.Module):
             x = self.patch_merge(x)
         return x
 
+
 class FinalDecoder(nn.Module):
 
     def __init__(self,
@@ -2574,6 +2619,7 @@ class FinalDecoder(nn.Module):
             x = x.reshape(B * T, H, W, C).permute(0, 3, 1, 2)
             x = self.conv_block(x).permute(0, 2, 3, 1).reshape(B, T, H, W, -1)
         return x
+
 
 class InitialStackPatchMergingEncoder(nn.Module):
 
@@ -2674,6 +2720,7 @@ class InitialStackPatchMergingEncoder(nn.Module):
                 x = conv_block(x).permute(0, 2, 3, 1).reshape(B, T, H, W, -1)
             x = patch_merge(x)
         return x
+
 
 class FinalStackUpsamplingDecoder(nn.Module):
 
@@ -2776,6 +2823,7 @@ class FinalStackUpsamplingDecoder(nn.Module):
                 x = conv_block(x).permute(0, 2, 3, 1).reshape(B, T, H, W, -1)
         return x
 
+
 class CuboidTransformerModel(nn.Module):
     """Cuboid Transformer for spatiotemporal forecasting
 
@@ -2794,6 +2842,7 @@ class CuboidTransformerModel(nn.Module):
              y <--- upsample (optional) <--- dec <----------
 
     """
+
     def __init__(self,
                  input_shape,
                  target_shape,
@@ -2909,7 +2958,7 @@ class CuboidTransformerModel(nn.Module):
 
         if self.num_global_vectors > 0:
             self.init_global_vectors = nn.Parameter(
-                torch.zeros((self.num_global_vectors, global_dim_ratio*base_units)))
+                torch.zeros((self.num_global_vectors, global_dim_ratio * base_units)))
 
         new_input_shape = self.get_initial_encoder_final_decoder(
             initial_downsample_scale=initial_downsample_scale,
@@ -3035,7 +3084,7 @@ class CuboidTransformerModel(nn.Module):
             initial_downsample_stack_conv_dim_list,
             initial_downsample_stack_conv_downscale_list,
             initial_downsample_stack_conv_num_conv_list,
-        ):
+    ):
         T_in, H_in, W_in, C_in = self.input_shape
         T_out, H_out, W_out, C_out = self.target_shape
         # Construct the initial upsampling / downsampling layers
@@ -3179,8 +3228,8 @@ class CuboidTransformerModel(nn.Module):
         x = self.initial_encoder(x)
         x = self.enc_pos_embed(x)
         if self.num_global_vectors > 0:
-            init_global_vectors = self.init_global_vectors\
-                .expand(B, self.num_global_vectors, self.global_dim_ratio*self.base_units)
+            init_global_vectors = self.init_global_vectors \
+                .expand(B, self.num_global_vectors, self.global_dim_ratio * self.base_units)
             mem_l, mem_global_vector_l = self.encoder(x, init_global_vectors)
         else:
             mem_l = self.encoder(x)
