@@ -1,16 +1,17 @@
 # TODO: maybe it is more efficient to read subsequent samples.
+# TODO: allow to load sequences with more then 5 min apart
 
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import numpy as np
 import datetime, h5py, os
 from typing import List, Union, Dict, Sequence
-from ...config import cfg
+from src.earthformer.config import cfg
 
 # IMS dataset constants
 IMS_IMG_TYPES = {"MIDDLE_EAST_VIS", "MIDDLE_EAST_DAY_CLOUDS", "MIDDLE_EAST_COLORED", "MIDDLE_EAST_IR"}
 IMS_RAW_DTYPES = {'MIDDLE_EAST_VIS': np.uint8}  # currently only VIS raw-type is known
-# IMS_DATA_SHAPE = {'MIDDLE_EAST_VIS': (48, 48), }    # @ to be decided later
+IMS_DATA_SHAPE = {'MIDDLE_EAST_VIS': (600, 600, 4)}
 PREPROCESS_SCALE_IMS = {'MIDDLE_EAST_VIS': 1 / 255}
 PREPROCESS_OFFSET_IMS = {'MIDDLE_EAST_VIS': 0}
 VALID_LAYOUTS = {'NHWT', 'NTHW', 'NTCHW', 'NTHWC', 'TNHW', 'TNCHW'}
@@ -24,7 +25,7 @@ class IMSDataset(Dataset):
     def __init__(self,
                  img_type: str = 'MIDDLE_EAST_VIS',
                  seq_len: int = 49,
-                 raw_seq_len: int = 288,
+                 raw_seq_len: int = 169,
                  stride: int = 12,
                  layout: str = 'NHWT',
                  ims_catalog: Union[str, pd.DataFrame] = None,
@@ -52,8 +53,8 @@ class IMSDataset(Dataset):
         # data parameters
         # TODO: consider including time filter.
         self.raw_seq_len = raw_seq_len
-        assert img_type in IMS_IMG_TYPES
-        self.img_type = img_type, 'Invalid image type!'
+        assert img_type in IMS_IMG_TYPES, 'Invalid image type!'
+        self.img_type = img_type
         self.start_date = start_date
         self.end_date = end_date
         if self.start_date is not None:
@@ -96,10 +97,9 @@ class IMSDataset(Dataset):
     def _idx_sample(self, index):
         event_idx = index // self.num_seq_per_event
         seq_idx = index % self.num_seq_per_event
-
-        event = self._events[event_idx]
+        event = self._events.iloc[event_idx]
         raw_seq = self._hdf_files[event['file_name']][self.img_type][event['file_index']]
-        seq = raw_seq[:,:,slice(seq_idx * self.stride, seq_idx * self.stride + self.seq_len)] # TODO: check actual dimentions
+        seq = raw_seq[slice(seq_idx * self.stride, seq_idx * self.stride + self.seq_len), :, :, :] # THWC
         return seq
 
     def close(self):
@@ -129,7 +129,11 @@ class IMSDataset(Dataset):
         return sample
 
 # class IMSPreprocess(Object):
-#     # convert to tensor here
+#     # TODO: convert to tensor here
+#     # TODO: convert to grayscale
+#     # TODO: change image dimensions
+#     # TODO: 1/255
+#     # TODO: change the output data type
 #     def __init__(self):
 #         pass
 #     def __call__(self, *args, **kwargs):
