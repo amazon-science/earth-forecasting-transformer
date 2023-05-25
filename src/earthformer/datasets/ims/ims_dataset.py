@@ -128,13 +128,43 @@ class IMSDataset(Dataset):
             sample = self.preprocess(sample)
         return sample
 
-# class IMSPreprocess(Object):
-#     # TODO: convert to tensor here
-#     # TODO: convert to grayscale
-#     # TODO: change image dimensions
-#     # TODO: 1/255
-#     # TODO: change the output data type
-#     def __init__(self):
-#         pass
-#     def __call__(self, *args, **kwargs):
-#         pass
+class IMSPreprocess():
+    # TODO: change image dimensions
+    # TODO: change the output data type
+
+    def __init__(self, grayscale=True, crop={}, scale=True):
+
+        # build the transformation function according to the parameters
+        relevant_transforms = []
+
+        # Convert x (H x W x C) to a Tensor (C x H x W), 
+        # either with scaling to [0.0, 1.0] or without
+        relevant_transforms.append(transforms.ToTensor())
+        if not scale:
+            relevant_transforms.append(transforms.Lambda(lambda t : (t * 255).to(torch.uint8)))
+            
+        # Convert to grayscale (1 x H x W) if necessary
+        if grayscale:
+            relevant_transforms.append(transforms.Grayscale())
+
+        # Crop image if necessary
+        if len(crop.keys()) > 0:
+            relevant_transforms.append(transforms.Lambda( \
+                lambda t : F.crop(t, crop['top'], crop['left'], crop['height'], crop['width'])))
+
+        # Convert Tensor (C x H x W) to a Tensor (H x W x C)
+        relevant_transforms.append(transforms.Lambda( \
+            lambda t : torch.moveaxis(t, -3, -1)))
+
+
+        # save the final transformation function 
+        self.preprocess_frame = transforms.Compose(relevant_transforms)
+
+    def preprocess_seq(self, seq):
+      return torch.stack([self.preprocess_frame(frame) for frame in seq])
+
+    def __call__(self, x):
+        if x.ndim == 4: # this is a seq
+            return self.preprocess_seq(x)
+        else:           # this is a frame - TODO: remove this later (now kept for debugging)
+            return self.preprocess_frame(x)
