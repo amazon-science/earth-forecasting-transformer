@@ -13,7 +13,7 @@ from datetime import datetime
 class CuboidIMSModule(pl.LightningModule):
 
     def __init__(self,
-                 total_num_steps: int,
+                 total_num_steps: int = 10,
                  oc_file: str = None,
                  save_dir: str = None):
         super(CuboidIMSModule, self).__init__()
@@ -22,16 +22,15 @@ class CuboidIMSModule(pl.LightningModule):
 
         # ----- load configs from file, and also from methods bc amazon are dumb  ----- #
         
-        if oc_file is not None:
-            oc_from_file = OmegaConf.load(open(oc_file, "r"))
-        else:
-            oc_from_file = None
-        
-        # TODO: maybe return to running get_base_config (if it will ever be copied into this class)
+        # TODO: these lines were replaced with one line for now - 
+        # when class is done,  make sure we still want this
+        # if oc_file is not None:
+        #     oc_from_file = OmegaConf.load(open(oc_file, "r"))
+        # else:
+        #     oc_from_file = None
         # oc = self.get_base_config(oc_from_file=oc_from_file) 
-        oc = self.get_model_config(oc_from_file=oc_from_file)
-        
-        model_cfg = OmegaConf.to_object(oc.model)
+        # model_cfg = OmegaConf.to_object(oc.model)
+        model_cfg = OmegaConf.to_object(self.get_model_config())
         
         # ---- compute fields that require arithmetic operations on config values  ---- #
 
@@ -116,65 +115,8 @@ class CuboidIMSModule(pl.LightningModule):
             norm_init_mode=model_cfg["norm_init_mode"],
         )
 
-        # self.total_num_steps = total_num_steps
-
-        # ----  following code is used to save the config as a data-member  ---- #
-        # ---- the file is re-opened in order to get a pointer to a new obj ---- #
-        # if oc_file is not None:
-        #     oc_from_file = OmegaConf.load(open(oc_file, "r"))
-        # else:
-        #     oc_from_file = None
-        # oc = self.get_base_config(oc_from_file=oc_from_file)
-        # self.save_hyperparameters(oc)
-        # self.oc = oc
-
-        # ----- this code saves fields that self.oc supposedly already has ----- #
-        #  -------------------- (atleast for the most part) -------------------- #
-        # # layout
-        # self.in_len = oc.layout.in_len
-        # self.out_len = oc.layout.out_len
-        # self.layout = oc.layout.layout
-        # # optimization
-        # self.max_epochs = oc.optim.max_epochs
-        # self.optim_method = oc.optim.method
-        # self.lr = oc.optim.lr
-        # self.wd = oc.optim.wd
-        # # lr_scheduler
-        # self.total_num_steps = total_num_steps
-        # self.lr_scheduler_mode = oc.optim.lr_scheduler_mode
-        # self.warmup_percentage = oc.optim.warmup_percentage
-        # self.min_lr_ratio = oc.optim.min_lr_ratio
-        # # logging
-        # self.save_dir = save_dir
-        # self.logging_prefix = oc.logging.logging_prefix
-        # # visualization
-        # self.train_example_data_idx_list = list(oc.vis.train_example_data_idx_list)
-        # self.val_example_data_idx_list = list(oc.vis.val_example_data_idx_list)
-        # self.test_example_data_idx_list = list(oc.vis.test_example_data_idx_list)
-        # self.eval_example_only = oc.vis.eval_example_only
-        # self.configure_save(cfg_file_path=oc_file)
-        # # evaluation
-        # self.metrics_list = oc.dataset.metrics_list
-        # self.threshold_list = oc.dataset.threshold_list
-        # self.metrics_mode = oc.dataset.metrics_mode
-        # self.valid_mse = torchmetrics.MeanSquaredError()
-        # self.valid_mae = torchmetrics.MeanAbsoluteError()
-        # self.valid_score = SEVIRSkillScore(
-        #     mode=self.metrics_mode,
-        #     seq_len=self.out_len,
-        #     layout=self.layout,
-        #     threshold_list=self.threshold_list,
-        #     metrics_list=self.metrics_list,
-        #     eps=1e-4,)
-        # self.test_mse = torchmetrics.MeanSquaredError()
-        # self.test_mae = torchmetrics.MeanAbsoluteError()
-        # self.test_score = SEVIRSkillScore(
-        #     mode=self.metrics_mode,
-        #     seq_len=self.out_len,
-        #     layout=self.layout,
-        #     threshold_list=self.threshold_list,
-        #     metrics_list=self.metrics_list,
-        #     eps=1e-4,)
+        # ------- i HAVENT imported the reset of CuboidSEVIRPLModule's __init__ ------- #
+        # --- it consists of another read of the config file & data member creation --- #
 
 
 
@@ -206,6 +148,8 @@ class CuboidIMSModule(pl.LightningModule):
     
     @classmethod
     def get_model_config(cls):
+
+        # TODO: scan all lines and remove unnecessary lines
         cfg = OmegaConf.create()
         dataset_oc = cls.get_dataset_config()
         height = dataset_oc.img_height
@@ -277,7 +221,7 @@ class CuboidIMSModule(pl.LightningModule):
 
 
     def forward(self, x):
-        return self.model(x)
+        return self.torch_nn_module(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch # TODO: understand what it means
