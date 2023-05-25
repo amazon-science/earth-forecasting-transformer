@@ -9,6 +9,8 @@ from src.earthformer.cuboid_transformer.cuboid_transformer import CuboidTransfor
 
 from datetime import datetime
 
+from omegaconf import OmegaConf
+
 
 class CuboidIMSModule(pl.LightningModule):
 
