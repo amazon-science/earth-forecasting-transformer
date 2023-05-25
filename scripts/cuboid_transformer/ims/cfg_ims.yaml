@@ -57,8 +57,8 @@ vis:
   eval_example_only: false
   plot_stride: 2
 model:
-  input_shape: [13, 384, 384, 1]
-  target_shape: [12, 384, 384, 1]
+  input_shape: [13, 600, 600, 1]
+  target_shape: [12, 600, 600, 1]
   base_units: 128
   # block_units: null
   scale_alpha: 1.0
