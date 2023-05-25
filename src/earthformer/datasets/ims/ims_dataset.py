@@ -1,7 +1,11 @@
 # TODO: maybe it is more efficient to read subsequent samples.
 # TODO: allow to load sequences with more then 5 min apart
+# TODO: verify that we took every important thing from SEVIR code
 
+import torch
 from torch.utils.data import Dataset
+from torchvision import transforms
+import torchvision.transforms.functional as F
 import pandas as pd
 import numpy as np
 import datetime, h5py, os
@@ -20,6 +24,7 @@ VALID_LAYOUTS = {'THWC'}
 IMS_ROOT_DIR = os.path.join(cfg.datasets_dir, "ims")
 IMS_CATALOG = os.path.join(IMS_ROOT_DIR, "CATALOG.csv")
 IMS_DATA_DIR = os.path.join(IMS_ROOT_DIR, "data")
+
 
 class IMSDataset(Dataset):
     def __init__(self,
@@ -65,8 +70,7 @@ class IMSDataset(Dataset):
             raise ValueError(f'Invalid layout = {layout}! Must be one of {VALID_LAYOUTS}.')
         self.layout = layout
         if preprocess == None:
-            pass
-            # TODO: set default preprocessing
+            preprocess = IMSPreprocess()
 
         # samples parameters
         assert seq_len <= self.raw_seq_len, f'seq_len must not be larger than raw_seq_len = {raw_seq_len}, got {seq_len}.'
@@ -92,14 +96,14 @@ class IMSDataset(Dataset):
     def _open_files(self):
         file_names = self._events['file_name'].unique()
         for f in file_names:
-          self._hdf_files[f] = h5py.File(os.path.join(self.ims_data_dir, f), 'r')
+            self._hdf_files[f] = h5py.File(os.path.join(self.ims_data_dir, f), 'r')
 
     def _idx_sample(self, index):
         event_idx = index // self.num_seq_per_event
         seq_idx = index % self.num_seq_per_event
         event = self._events.iloc[event_idx]
         raw_seq = self._hdf_files[event['file_name']][self.img_type][event['file_index']]
-        seq = raw_seq[slice(seq_idx * self.stride, seq_idx * self.stride + self.seq_len), :, :, :] # THWC
+        seq = raw_seq[slice(seq_idx * self.stride, seq_idx * self.stride + self.seq_len), :, :, :]  # THWC
         return seq
 
     def close(self):
@@ -128,43 +132,41 @@ class IMSDataset(Dataset):
             sample = self.preprocess(sample)
         return sample
 
-class IMSPreprocess():
-    # TODO: change image dimensions
+
+class IMSPreprocess:
     # TODO: change the output data type
-
-    def __init__(self, grayscale=True, crop={}, scale=True):
-
+    def __init__(self, grayscale=False, crop={}, scale=True):
         # build the transformation function according to the parameters
         relevant_transforms = []
 
-        # Convert x (H x W x C) to a Tensor (C x H x W), 
+        # convert (H x W x C) to a Tensor (C x H x W),
         # either with scaling to [0.0, 1.0] or without
         relevant_transforms.append(transforms.ToTensor())
         if not scale:
-            relevant_transforms.append(transforms.Lambda(lambda t : (t * 255).to(torch.uint8)))
-            
-        # Convert to grayscale (1 x H x W) if necessary
+            relevant_transforms.append(transforms.Lambda(lambda t: (t * 255).to(torch.uint8)))
+
+        # convert to grayscale (1 x H x W) if necessary
         if grayscale:
+            relevant_transforms.append(transforms.Lambda(lambda x: x[:3, :, :]))
             relevant_transforms.append(transforms.Grayscale())
 
-        # Crop image if necessary
+        # crop image if necessary
         if len(crop.keys()) > 0:
-            relevant_transforms.append(transforms.Lambda( \
-                lambda t : F.crop(t, crop['top'], crop['left'], crop['height'], crop['width'])))
+            relevant_transforms.append(transforms.Lambda(
+                lambda t: F.crop(t, crop['top'], crop['left'], crop['height'], crop['width'])))
 
-        # Convert Tensor (C x H x W) to a Tensor (H x W x C)
-        relevant_transforms.append(transforms.Lambda( \
-            lambda t : torch.moveaxis(t, -3, -1)))
+        # convert Tensor (C x H x W) to a Tensor (H x W x C)
+        relevant_transforms.append(transforms.Lambda(
+            lambda t: torch.moveaxis(t, -3, -1)))
 
-
-        # save the final transformation function 
+        # save the final transformation function
         self.preprocess_frame = transforms.Compose(relevant_transforms)
 
     def preprocess_seq(self, seq):
-      return torch.stack([self.preprocess_frame(frame) for frame in seq])
+        return torch.stack([self.preprocess_frame(frame) for frame in seq])
 
     def __call__(self, x):
-        if x.ndim == 4: # this is a seq
+        if x.ndim == 4:  # this is a seq
             return self.preprocess_seq(x)
-        else:           # this is a frame - TODO: remove this later (now kept for debugging)
+        else:  # this is a frame - TODO: remove this later (now kept for debugging)
             return self.preprocess_frame(x)

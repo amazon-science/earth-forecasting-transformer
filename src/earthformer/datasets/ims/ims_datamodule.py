@@ -4,15 +4,16 @@ from src.earthformer.config import cfg
 from datetime import datetime
 from ims_dataset import IMSDataset
 
+
 class IMSLightningDataModule(LightningDataModule):
     def __init__(self,
-                 start_date: datetime.datetime = None,
-                 train_val_split_date: datetime.datetime = None,
-                 train_test_split_date: datetime.datetime = None,
-                 end_date: datetime.datetime = None,
+                 start_date: datetime = None,
+                 train_val_split_date: datetime = None,
+                 train_test_split_date: datetime = None,
+                 end_date: datetime = None,
                  num_workers: int = 1,
                  batch_size: int = 1,
-                 **kwargs # dataset additional parameters
+                 **kwargs  # dataset additional parameters
                  ):
         super(IMSLightningDataModule, self).__init__()
         assert start_date <= train_val_split_date <= train_test_split_date <= end_date
@@ -29,16 +30,20 @@ class IMSLightningDataModule(LightningDataModule):
         self.data_set_kwargs = kwargs
 
     def prepare_data(self) -> None:
-        #download the data
+        # TODO: download the data
         pass
 
     def setup(self, stage=None) -> None:
-        #read https://lightning.ai/docs/pytorch/stable/data/datamodule.html how it is supposed to look
-        self.ims_train = IMSDataset(start_date=self.start_date, end_date=self.train_val_split_date, **self.data_set_kwargs)
-        self.ims_val = IMSDataset(start_date=self.train_val_split_date, end_date=self.train_test_split_date, **self.data_set_kwargs)
-        self.ims_test = IMSDataset(start_date=self.train_test_split_date, end_date=self.end_date, **self.data_set_kwargs)
+        # read https://lightning.ai/docs/pytorch/stable/data/datamodule.html how it is supposed to look
+        self.ims_train = IMSDataset(start_date=self.start_date, end_date=self.train_val_split_date,
+                                    **self.data_set_kwargs)
+        self.ims_val = IMSDataset(start_date=self.train_val_split_date, end_date=self.train_test_split_date,
+                                  **self.data_set_kwargs)
+        self.ims_test = IMSDataset(start_date=self.train_test_split_date, end_date=self.end_date,
+                                   **self.data_set_kwargs)
         # TODO: test and train are the same
-        self.ims_predict = IMSDataset(start_date=self.train_test_split_date, end_date=self.end_date, **self.data_set_kwargs)
+        self.ims_predict = IMSDataset(start_date=self.train_test_split_date, end_date=self.end_date,
+                                      **self.data_set_kwargs)
 
     def train_dataloader(self):
         return DataLoader(self.ims_train, batch_size=self.batch_size, num_workers=self.num_workers)
