@@ -277,7 +277,7 @@ class PatchMerging3D(nn.Module):
             T += pad_t
             H += pad_h
             W += pad_w
-            x = _generalize_padding(x, pad_t, pad_w, pad_h, padding_type=self.padding_type)
+            x = _generalize_padding(x, pad_t, pad_h, pad_w, padding_type=self.padding_type)
 
         x = x.reshape((B,
                        T // self.downsample[0], self.downsample[0],
