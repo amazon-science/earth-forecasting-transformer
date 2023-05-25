@@ -1,7 +1,7 @@
 # TODO: maybe it is more efficient to read subsequent samples.
 # TODO: allow to load sequences with more then 5 min apart
 
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import pandas as pd
 import numpy as np
 import datetime, h5py, os
@@ -14,7 +14,7 @@ IMS_RAW_DTYPES = {'MIDDLE_EAST_VIS': np.uint8}  # currently only VIS raw-type is
 IMS_DATA_SHAPE = {'MIDDLE_EAST_VIS': (600, 600, 4)}
 PREPROCESS_SCALE_IMS = {'MIDDLE_EAST_VIS': 1 / 255}
 PREPROCESS_OFFSET_IMS = {'MIDDLE_EAST_VIS': 0}
-VALID_LAYOUTS = {'NHWT', 'NTHW', 'NTCHW', 'NTHWC', 'TNHW', 'TNCHW'}
+VALID_LAYOUTS = {'THWC'}
 
 # IMS dataset directory
 IMS_ROOT_DIR = os.path.join(cfg.datasets_dir, "ims")
@@ -27,7 +27,7 @@ class IMSDataset(Dataset):
                  seq_len: int = 49,
                  raw_seq_len: int = 169,
                  stride: int = 12,
-                 layout: str = 'NHWT',
+                 layout: str = 'THWC',
                  ims_catalog: Union[str, pd.DataFrame] = None,
                  ims_data_dir: str = None,
                  start_date: datetime.datetime = None,
