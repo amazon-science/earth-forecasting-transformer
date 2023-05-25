@@ -16,7 +16,6 @@ CATALOG_PATH = "/ims_projects/Research/Oren/Lia_Ofir/earthformer-inference-exper
 CFG_FILE_PATH = "/ims_projects/Research/Oren/Lia_Ofir/earthformer-inference-experiments/ims_data/extract_cfg.json"
 EUMETSAT_FRAME_PATH = "/ims_archive/Operational/MSG/images/HRIT_RSS/{img_type}/{year}/{month}/{day}/{year}{month}{day}{hour}{minute}.{img_format}"
 
-
 class IMSH5():
     """
     represents an h5 file containing IMS data.
@@ -33,9 +32,10 @@ class IMSH5():
                  slice_x=None,
                  slice_y=None,
                  channels='grayscale',
-                 file_directory=None, file_name=None):
+                 file_directory=None, file_name=None,
+                 verbose=True):
 
-        #
+        # image type
         assert img_type in IMG_TYPES
         self.img_type = img_type
 
@@ -51,11 +51,16 @@ class IMSH5():
         # frames sampling
         assert (time_delta.seconds / 60) % 5 == 0
         self.time_delta = time_delta
-        assert sunrise <= sunset
-        assert sunset < timedelta(hours=24)
-        self.sunrise = sunrise
-        self.sunset = sunset
-        self.samples_per_event = (self.sunset.seconds - self.sunrise.seconds) / self.time_delta.seconds + 1
+        if sunrise and sunset:
+            assert sunrise <= sunset
+            assert sunset < timedelta(hours=24)
+            self.sunrise = sunrise
+            self.sunset = sunset
+        else:
+            self.sunrise = timedelta(hours=2, minutes=40)
+            self.sunset = timedelta(hours=16, minutes=40)
+
+        self.samples_per_event = int((self.sunset.seconds - self.sunrise.seconds) / self.time_delta.seconds + 1)
 
         # frame parameters
         assert img_format in IMG_FORMATS
@@ -69,13 +74,15 @@ class IMSH5():
             self.slice_x = slice(0, self.shape[0])
         else:
             assert not slice_x.step
-            assert (slice_x.end - slice_x.start) + 1 <= shape[0]
+            assert (slice_x.stop - slice_x.start) + 1 <= shape[0]
+            self.slice_x = slice_x
 
         if not slice_y:
             self.slice_y = slice(0, self.shape[1])
         else:
             assert not slice_y.step
-            assert (slice_y.end - slice_y.start) + 1 <= shape[1]
+            assert (slice_y.stop - slice_y.start) + 1 <= shape[1]
+            self.slice_y = slice_y
 
         assert channels in ['grayscale', 'rgba']
         self.channels = channels
@@ -87,6 +94,7 @@ class IMSH5():
             self._h5_file_name()
 
         # setup
+        self.verbose = verbose
         self.catalog = pd.DataFrame(columns=CATALOG_HEADERS)
         self._open_file()
 
@@ -111,6 +119,8 @@ class IMSH5():
     def extract_all(self):
         self._load_data()
         self._save_data()
+        if self.verbose:
+            print(f"saved {self.file_name}")
 
     def _save_data(self):
         self.file.close()
@@ -122,6 +132,7 @@ class IMSH5():
             day_time_delta = timedelta(days=1)
             while event_date <= self.end_date:
                 self._load_event(event_date)
+                event_date += day_time_delta
 
         if self.sample_mode == 'random':
             # TODO: write this
@@ -142,7 +153,7 @@ class IMSH5():
         frame_time = start_event_time
         while frame_time <= end_event_time and full_event:
             frame = self._load_frame(frame_time)  # TODO: editing the frame_path
-            if not frame:
+            if frame is None:
                 full_event = False
             event_frames.append(frame)
             frame_time += self.time_delta
@@ -157,6 +168,12 @@ class IMSH5():
                 {'id': event_id, 'file_name': self.file_name, 'file_index': self._index,
                  'time_utc': event_date + self.sunrise,
                  'img_type': self.img_type, 'min_delta': self.time_delta.seconds / 60}, ignore_index=True)
+
+            if self.verbose:
+                print(f"V appended event {event_id} to catalog of {self.file_name}")
+        else:
+            if self.verbose:
+                print(f"X event {event_id} was not appended to catalog of {self.file_name}")
 
     def _load_frame(self, frame_time, frame_path=None):
         if not frame_path:
@@ -175,13 +192,15 @@ class IMSH5():
                 raw_img = png.Reader(file=open(frame_path, "rb")).asRGBA8()
                 raw_pixels = raw_img[2]
                 pixels = np.array([list(row) for row in raw_pixels], dtype="uint8").reshape((*self.shape, 4))
-                pixels = pixels[self.slice_x, self.slice_y, :]
-                if self.channels == 'grayscale':
-                    pixels = (pixels[:, :, 0] + pixels[:, :, 1] + pixels[:, :, 2]) / 3
 
             elif self.img_format == 'jpeg':
-                # TODO: write this
-                pass
+                raw_img = PIL.Image.open(frame_path)
+                pixels = np.array(raw_img)
+
+            pixels = pixels[self.slice_x, self.slice_y, :]
+            if self.channels == 'grayscale':
+                pixels = 0.299 * pixels[:, :, 0] + 0.587 * pixels[:, :, 1] + 0.114 * pixels[:, :, 2] # https://spec.oneapi.io/oneipl/0.6/convert/rgb-gray-conversion.html, https://github.com/pytorch/vision/blob/main/torchvision/transforms/_functional_tensor.py
+                pixels = pixels.reshape(*pixels.shape, 1) # HWC
 
         return pixels
 

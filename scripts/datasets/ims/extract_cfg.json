@@ -4,15 +4,15 @@
       "img_type": "MIDDLE_EAST_VIS",
       "time_delta": 5,
       "start_date": [2023, 1, 3],
-      "end_date": [2023, 1, 10],
-      "sunrise": [],
-      "sunset": [],
+      "end_date": [2023, 1, 3],
+      "sunrise": [2, 40],
+      "sunset": [2, 40],
       "sample_mode": "sequent",
       "img_format": "png",
       "shape": [600, 600],
-      "slice_x": [],
-      "slice_y": [],
-      "channels": "grayscale",
+      "slice_x": [100, 200],
+      "slice_y": [300, 400],
+      "channels": "grayscale"
     }
   ]
 }
