@@ -2,9 +2,9 @@ dataset:
   dataset_name: "ims"
   img_height: 600
   img_width: 600
-  in_len: 13
-  out_len: 12
-  seq_len: 25
+  in_len: 15
+  out_len: 5
+  seq_len: 20
   plot_stride: 2
   interval_real_time: 5
   sample_mode: "sequent"
@@ -18,8 +18,8 @@ dataset:
   metrics_list: ['csi', 'pod', 'sucr', 'bias']
   threshold_list: [16, 74, 133, 160, 181, 219]
 layout:
-  in_len: 13
-  out_len: 12
+  in_len: 15
+  out_len: 5
   layout: "NTHWC"
 optim:
   total_batch_size: 32
@@ -57,8 +57,8 @@ vis:
   eval_example_only: false
   plot_stride: 2
 model:
-  input_shape: [13, 600, 600, 1]
-  target_shape: [12, 600, 600, 1]
+  input_shape: [15, 600, 600, 4]
+  target_shape: [5, 600, 600, 4]
   base_units: 128
   block_units: null
   scale_alpha: 1.0
