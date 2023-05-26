@@ -1,7 +1,7 @@
 dataset:
-  dataset_name: "sevir"
-  img_height: 384
-  img_width: 384
+  dataset_name: "ims"
+  img_height: 600
+  img_width: 600
   in_len: 13
   out_len: 12
   seq_len: 25
@@ -11,8 +11,8 @@ dataset:
   stride: 12
   layout: "NTHWC"
   start_date: null
-  train_val_split_date: [2019, 1, 1]
-  train_test_split_date: [2019, 6, 1]
+  train_val_split_date: [2023, 1, 1]
+  train_test_split_date: [2023, 1, 9]
   end_date: null
   metrics_mode: "0"
   metrics_list: ['csi', 'pod', 'sucr', 'bias']
@@ -41,7 +41,7 @@ optim:
   early_stop_patience: 20
   save_top_k: 1
 logging:
-  logging_prefix: "Cuboid_SEVIR"
+  logging_prefix: "Cuboid_IMS"
   monitor_lr: true
   monitor_device: false
   track_grad_norm: -1
@@ -60,7 +60,7 @@ model:
   input_shape: [13, 600, 600, 1]
   target_shape: [12, 600, 600, 1]
   base_units: 128
-  # block_units: null
+  block_units: null
   scale_alpha: 1.0
 
   enc_depth: [1, 1]
