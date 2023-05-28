@@ -6,14 +6,14 @@ import numpy as np
 import os, json
 
 H5_FILE_NAME = "IMS_{img_type}_{year}_{start_day}_{end_day}.h5"
-H5_FILES_DIRECTORY = "/ims_projects/Research/Oren/Lia_Ofir/earthformer-inference-experiments/ims_data/data/{img_type}/{year}"
+H5_FILES_DIRECTORY = "/ims_projects/Research/Oren/Lia_Ofir/ims_data/data/{img_type}/{year}"
 IMG_TYPES = ["MIDDLE_EAST_VIS", "MIDDLE_EAST_DAY_CLOUDS", "MIDDLE_EAST_COLORED", "MIDDLE_EAST_IR"]
 IMG_FORMATS = ["png", "jpeg"]
 IMG_SHAPES = {'png': (600, 600)}
 CATALOG_HEADERS = ['id', 'file_name', 'file_index', 'img_type', 'time_utc', 'min_delta']
 
-CATALOG_PATH = "/ims_projects/Research/Oren/Lia_Ofir/earthformer-inference-experiments/ims_data/CATALOG.csv"
-CFG_FILE_PATH = "/ims_projects/Research/Oren/Lia_Ofir/earthformer-inference-experiments/ims_data/extract_cfg.json"
+CATALOG_PATH = "/ims_projects/Research/Oren/Lia_Ofir/ims_data/CATALOG.csv"
+CFG_FILE_PATH = "/ims_projects/Research/Oren/Lia_Ofir/ims_data/extract_cfg.json"
 EUMETSAT_FRAME_PATH = "/ims_archive/Operational/MSG/images/HRIT_RSS/{img_type}/{year}/{month}/{day}/{year}{month}{day}{hour}{minute}.{img_format}"
 
 class IMSH5():
