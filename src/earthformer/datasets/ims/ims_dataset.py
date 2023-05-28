@@ -23,7 +23,7 @@ VALID_LAYOUTS = {'THWC'}
 # IMS dataset directory
 IMS_ROOT_DIR = os.path.join(cfg.datasets_dir, "ims")
 IMS_CATALOG = os.path.join(IMS_ROOT_DIR, "CATALOG.csv")
-IMS_DATA_DIR = os.path.join(IMS_ROOT_DIR, "data")
+IMS_DATA_DIR = os.path.join(IMS_ROOT_DIR, "data/MIDDLE_EAST_VIS/2023")
 
 
 class IMSDataset(Dataset):

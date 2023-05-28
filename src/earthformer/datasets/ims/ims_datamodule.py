@@ -2,7 +2,7 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader
 from src.earthformer.config import cfg
 from datetime import datetime
-from ims_dataset import IMSDataset
+from src.earthformer.datasets.ims.ims_dataset import IMSDataset
 
 
 class IMSLightningDataModule(LightningDataModule):
