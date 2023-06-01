@@ -93,6 +93,7 @@ class IMSDataset(Dataset):
 
     def _open_files(self):
         file_names = self._events['file_name'].unique()
+        # TODO: get year and img_type from h5 file name and add to the path of the file
         for f in file_names:
             self._hdf_files[f] = h5py.File(os.path.join(self.ims_data_dir, f), 'r')
 
