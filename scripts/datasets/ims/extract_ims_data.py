@@ -159,7 +159,6 @@ class IMSH5():
             frame_time += self.time_delta
 
         if full_event:
-            self._index += 1
             self._events.append(event_frames)
             self._ids.append(event_id)
 
@@ -168,6 +167,8 @@ class IMSH5():
                 {'id': event_id, 'file_name': self.file_name, 'file_index': self._index,
                  'time_utc': event_date + self.sunrise,
                  'img_type': self.img_type, 'min_delta': self.time_delta.seconds / 60}, ignore_index=True)
+
+            self._index += 1
 
             if self.verbose:
                 print(f"V appended event {event_id} to catalog of {self.file_name}")
