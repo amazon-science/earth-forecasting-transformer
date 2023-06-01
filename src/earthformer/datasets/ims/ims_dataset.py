@@ -39,7 +39,6 @@ class IMSDataset(Dataset):
                  end_date: datetime.datetime = None,
                  shuffle: bool = False,
                  shuffle_seed: int = 1,
-                 output_type=np.float32,
                  preprocess=None):
 
         super(IMSDataset, self).__init__()
@@ -78,7 +77,6 @@ class IMSDataset(Dataset):
         self.stride = stride
         self.shuffle = shuffle
         self.shuffle_seed = int(shuffle_seed)
-        self.output_type = output_type
         self.preprocess = preprocess
 
         # setup
@@ -103,7 +101,7 @@ class IMSDataset(Dataset):
         seq_idx = index % self.num_seq_per_event
         event = self._events.iloc[event_idx]
         raw_seq = self._hdf_files[event['file_name']][self.img_type][event['file_index']]
-        seq = raw_seq[slice(seq_idx * self.stride, seq_idx * self.stride + self.seq_len), :, :, :]  # THWC
+        seq = raw_seq[slice(seq_idx * self.stride, seq_idx * self.stride + self.seq_len), :, :, :]  # TODO: allow layout different then THWC
         return seq
 
     def close(self):
@@ -135,7 +133,7 @@ class IMSDataset(Dataset):
 
 class IMSPreprocess:
     # TODO: change the output data type
-    def __init__(self, grayscale=False, crop={}, scale=True):
+    def __init__(self, grayscale=False, crop={}, scale=True, data_type=torch.float32):
         # build the transformation function according to the parameters
         relevant_transforms = []
 
@@ -146,7 +144,7 @@ class IMSPreprocess:
             relevant_transforms.append(transforms.Lambda(lambda t: (t * 255).to(torch.uint8)))
 
         # convert to grayscale (1 x H x W) if necessary
-        if grayscale:
+        if grayscale: # TODO: when the image is akready in grayscale this creates bug
             relevant_transforms.append(transforms.Lambda(lambda x: x[:3, :, :]))
             relevant_transforms.append(transforms.Grayscale())
 
@@ -158,6 +156,10 @@ class IMSPreprocess:
         # convert Tensor (C x H x W) to a Tensor (H x W x C)
         relevant_transforms.append(transforms.Lambda(
             lambda t: torch.moveaxis(t, -3, -1)))
+
+        # convert data type
+        relevant_transforms.append(transforms.Lambda(
+            lambda t: t.to(data_type)))
 
         # save the final transformation function
         self.preprocess_frame = transforms.Compose(relevant_transforms)

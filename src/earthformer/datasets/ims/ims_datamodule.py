@@ -4,6 +4,7 @@ from src.earthformer.config import cfg
 from datetime import datetime
 from src.earthformer.datasets.ims.ims_dataset import IMSDataset
 
+VALID_BATCH_LAYOUTS = {'NTHWC'}
 
 class IMSLightningDataModule(LightningDataModule):
     def __init__(self,
@@ -13,6 +14,7 @@ class IMSLightningDataModule(LightningDataModule):
                  end_date: datetime = None,
                  num_workers: int = 1,
                  batch_size: int = 1,
+                 batch_layout: str = "NTHWC",
                  **kwargs  # dataset additional parameters
                  ):
         super(IMSLightningDataModule, self).__init__()
@@ -26,6 +28,8 @@ class IMSLightningDataModule(LightningDataModule):
         self.num_workers = num_workers
         assert batch_size >= 1
         self.batch_size = batch_size
+        assert batch_layout in VALID_BATCH_LAYOUTS
+        self.batch_layout = batch_layout
 
         self.data_set_kwargs = kwargs
 
