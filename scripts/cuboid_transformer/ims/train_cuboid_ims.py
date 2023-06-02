@@ -1,5 +1,8 @@
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
+from pytorch_lightning import loggers as pl_loggers
+
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, DeviceStatsMonitor
 
 from torch.optim import AdamW
 from torch.nn import functional as F
@@ -11,12 +14,12 @@ from src.earthformer.cuboid_transformer.cuboid_transformer import CuboidTransfor
 from datetime import datetime
 from omegaconf import OmegaConf
 import os
+import argparse
 
 
 class CuboidIMSModule(pl.LightningModule):
 
     def __init__(self,
-                 total_num_steps: int = 10,
                  cfg_file_path: str = None,
                  logging_dir: str = None):
         super(CuboidIMSModule, self).__init__()
@@ -112,29 +115,18 @@ class CuboidIMSModule(pl.LightningModule):
             checkpoint_level=model_cfg["checkpoint_level"],
         )
 
+        self.train_loss = F.mse_loss
+        self.validation_loss = F.mse_loss
         self.save_hyperparameters(train_cfg)
-        self.init_data_members_using_conf(train_cfg, total_num_steps, logging_dir) # is this necessary?
+        
+        self.dm = self._get_dm()
 
-    def init_data_members_using_conf(self, oc, total_num_steps, save_dir):
-        pass
-        # self.valid_mse = torchmetrics.MeanSquaredError()
-        # self.valid_mae = torchmetrics.MeanAbsoluteError()
-        # self.valid_score = SEVIRSkillScore(
-        #     mode=self.metrics_mode,
-        #     seq_len=self.out_len,
-        #     layout=self.layout,
-        #     threshold_list=self.threshold_list,
-        #     metrics_list=self.metrics_list,
-        #     eps=1e-4,)
-        # self.test_mse = torchmetrics.MeanSquaredError()
-        # self.test_mae = torchmetrics.MeanAbsoluteError()
-        # self.test_score = SEVIRSkillScore(
-        #     mode=self.metrics_mode,
-        #     seq_len=self.out_len,
-        #     layout=self.layout,
-        #     threshold_list=self.threshold_list,
-        #     metrics_list=self.metrics_list,
-        #     eps=1e-4,)
+        self.total_num_steps = int(self.hparams.optim.max_epochs * 
+                                   len(self.dm.ims_train) / 
+                                   self.hparams.optim.total_batch_size)
+        
+
+
 
     def forward(self, x):
         return self.torch_nn_module(x)
@@ -143,16 +135,13 @@ class CuboidIMSModule(pl.LightningModule):
         # batch.shape is (N, T, H, W, C)
         x, y = batch[:, :self.hparams.layout.in_len, :, :, :], batch[:, self.hparams.layout.in_len:(self.hparams.layout.in_len + self.hparams.layout.out_len), :, :, :]
         y_hat = self(x)
-        loss = F.mse_loss(y_hat, y) # TODO: we did not use the self.mse attributes.
+        loss = self.train_loss(y_hat, y) 
 
         # TODO: check the logging
         self.log('train_loss', loss,
                  on_step=True, on_epoch=False)
 
         return loss
-
-    def validation_step(self, batch, batch_idx):
-        pass
 
     def predict_step(self, batch, batch_idx):
         pass
@@ -161,7 +150,76 @@ class CuboidIMSModule(pl.LightningModule):
         optimizer = AdamW(self.parameters())  # TODO: give params
         return optimizer
 
-    def get_dm(self):
+    def get_trainer_kwargs(self, gpus):
+        r"""
+        Default kwargs used when initializing pl.Trainer
+        """
+
+        # TODO:
+        # originally, train_cuboid_sevir.py created a ModelCheckpoint object
+        # that was based on the logging of validation_epoch_end. We removed
+        # this object because checkpointing is already done without it.
+        # checkpoint_callback = ModelCheckpoint(
+        #     monitor="valid_loss_epoch",
+        #     filename="model-{epoch:03d}",
+        #     save_top_k=self.oc.optim.save_top_k,
+        #     save_last=True,
+        #     mode="min",
+        # )
+
+        # TODO: early stopping not implemented currently
+        # because it depends on SEVIRSkillScore objects 
+        # if self.hparams.optim.early_stop:
+        #     callbacks += [EarlyStopping(monitor="valid_loss_epoch",
+        #                                 min_delta=0.0,
+        #                                 patience=self.oc.optim.early_stop_patience,
+        #                                 verbose=False,
+        #                                 mode=self.oc.optim.early_stop_mode), ]
+
+        callbacks = []
+        # callbacks += [checkpoint_callback, ]
+        if self.hparams.logging.monitor_lr:
+            callbacks += [LearningRateMonitor(logging_interval='step'), ]
+        if self.hparams.logging.monitor_device:
+            callbacks += [DeviceStatsMonitor(), ]
+
+        tb_logger = pl_loggers.TensorBoardLogger(save_dir=self.logging_dir)
+        csv_logger = pl_loggers.CSVLogger(save_dir=self.logging_dir)
+
+        trainer_kwargs = dict(
+            devices=gpus,
+            accumulate_grad_batches=self.hparams.optim.total_batch_size // (self.hparams.optim.micro_batch_size * gpus)
+            callbacks=callbacks,
+            # log
+            logger=[tb_logger, csv_logger],
+            log_every_n_steps=max(1, int(self.hparams.trainer.log_step_ratio * self.total_num_steps)),
+            track_grad_norm=self.hparams.logging.track_grad_norm,
+            # save
+            default_root_dir=self.logging_dir,
+            # ddp
+            accelerator="gpu",
+            strategy=ApexDDPStrategy(find_unused_parameters=False, delay_allreduce=True),
+            # optimization
+            max_epochs=self.hparams.optim.max_epochs,
+            check_val_every_n_epoch=self.hparams.trainer.check_val_every_n_epoch,
+            gradient_clip_val=self.hparams.optim.gradient_clip_val,
+            # NVIDIA amp
+            precision=self.hparams.trainer.precision,
+        )
+        return trainer_kwargs
+
+    def validation_step(self, batch, batch_idx):
+        # batch.shape is (N, T, H, W, C)
+        x, y = batch[:, :self.hparams.layout.in_len, :, :, :], batch[:, self.hparams.layout.in_len:(self.hparams.layout.in_len + self.hparams.layout.out_len), :, :, :]
+        y_hat = self(x)
+
+        # TODO: original code saved images of specific examples  (save_vis_step_end)
+
+        loss = self.validation_loss(y_hat, y)
+        self.log('val_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False)
+        return None
+
+    def _get_dm(self):
         dm = IMSLightningDataModule(start_date=datetime(*self.hparams.dataset.start_date),
                                # TODO: get date filter for each one instead of a fixed date
                                train_val_split_date=datetime(*self.hparams.dataset.train_val_split_date),
@@ -182,19 +240,36 @@ class CuboidIMSModule(pl.LightningModule):
         dm.setup()
         return dm
 
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--logging-dir', default=None, type=str)
+    parser.add_argument('--gpus', default=1, type=int)
+    parser.add_argument('--cfg', default=None, type=str)
+    # TODO: return to these arguments when it will be relevant
+    # parser.add_argument('--test', action='store_true')
+    # parser.add_argument('--pretrained', action='store_true',
+    #                     help='Load pretrained checkpoints for test.')
+    # parser.add_argument('--ckpt-name', default=None, type=str,
+    #                     help='The model checkpoint trained on IMS.')
+    return parser
 
 def main():
-    # TODO: get command line args! (cfg file path for example)
-    cfg_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "cfg_ims.yaml"))
+    parser = get_parser()
+    args = parser.parse_args()
+
+    # TODO: seed_everything
 
     # model
-    l_model = CuboidIMSModule(cfg_file_path=cfg_file_path)
-
+    l_model = CuboidIMSModule(cfg_file_path=cfg_file_path, 
+                              logging_dir=args.logging_dir,
+                              cfg_file_path=args.cfg)
+    
     # data
-    dm = l_model.get_dm()
+    dm = l_model.dm
 
     # train model
-    trainer = pl.Trainer(max_epochs=l_model.hparams.optim.max_epochs)
+    trainer_kwargs = l_model.get_trainer_kwargs(args.gpus)
+    trainer = pl.Trainer(**trainer_kwargs)
     trainer.fit(model=l_model, train_dataloaders=dm.train_dataloader())
 
 if __name__ == "__main__":
