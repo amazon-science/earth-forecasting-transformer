@@ -21,7 +21,7 @@ dataset:
       width: 384
     scale: true
 optim:
-  total_batch_size: 16
+  total_batch_size: 32
   micro_batch_size: 1
   num_workers: 1
   seed: 0

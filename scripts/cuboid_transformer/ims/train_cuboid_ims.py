@@ -74,7 +74,12 @@ class CuboidIMSModule(pl.LightningModule):
         pass
 
     def configure_optimizers(self):
-        optimizer = AdamW(self.parameters())  # TODO: give params
+        if self.hparams.optim.method == 'adamw':
+            optimizer = AdamW(params=self.parameters(),
+                              lr=self.hparams.optim.lr,
+                              weight_decay=self.hparams.optim.wd)
+        else:
+            raise NotImplementedError
         return optimizer
 
     def get_trainer_kwargs(self, gpus):
@@ -139,7 +144,7 @@ class CuboidIMSModule(pl.LightningModule):
         x, y = self._get_x_y_from_batch(batch)
         y_hat = self(x)
 
-        # TODO: original code saved images of specific examples  (save_vis_step_end)
+        # TODO: original code saved images of specific examples (save_vis_step_end)
 
         loss = self.validation_loss(y_hat, y)
         self.log('val_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False)
@@ -272,6 +277,8 @@ def main():
     args = parser.parse_args()
 
     # TODO: seed_everything
+    # TODO: start from a saved checkpoint
+    # TODO: config optimizer
 
     # model
     l_model = CuboidIMSModule(logging_dir=args.logging_dir,

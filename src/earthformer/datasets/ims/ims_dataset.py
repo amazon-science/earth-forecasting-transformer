@@ -159,13 +159,12 @@ class IMSPreprocess:
     # TODO: change the output data type
     def __init__(self, grayscale=False, crop={}, scale=True, data_type=torch.float32):
         # build the transformation function according to the parameters
-        relevant_transforms = []
+        # convert (H x W x C) to a Tensor (C x H x W)
+        relevant_transforms = [transforms.ToTensor()]
 
-        # convert (H x W x C) to a Tensor (C x H x W),
-        # either with scaling to [0.0, 1.0] or without
-        relevant_transforms.append(transforms.ToTensor())
-        if not scale:
-            relevant_transforms.append(transforms.Lambda(lambda t: (t * 255).to(torch.uint8)))
+        # scaling to [0.0, 1.0] (or not)
+        if scale:
+            relevant_transforms.append(transforms.Lambda(lambda t: t / 255))
 
         # convert to grayscale (1 x H x W) if necessary
         if grayscale: # TODO: when the image is already in grayscale this creates bug
