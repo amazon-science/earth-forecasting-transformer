@@ -27,6 +27,11 @@ IMS_DATA_DIR = os.path.join(IMS_ROOT_DIR, "data")
 
 
 class IMSDataset(Dataset):
+    def _load_events(self):
+        self._events = self.catalog[self.catalog.img_type == self.img_type]
+        if self.shuffle:
+            self._events = self._events.sample(frac=1, random_state=self.shuffle_seed)
+
     def __init__(self,
                  img_type: str = 'MIDDLE_EAST_VIS',
                  seq_len: int = 49,
@@ -39,7 +44,12 @@ class IMSDataset(Dataset):
                  end_date: datetime.datetime = None,
                  shuffle: bool = False,
                  shuffle_seed: int = 1,
-                 preprocess=None):
+                 grayscale: bool = False,
+                 left: int = 0,
+                 top: int = 0,
+                 width: int = None,
+                 height: int = None,
+                 scale: bool = True):
 
         super(IMSDataset, self).__init__()
 
@@ -68,8 +78,6 @@ class IMSDataset(Dataset):
         if layout not in VALID_LAYOUTS:
             raise ValueError(f'Invalid layout = {layout}! Must be one of {VALID_LAYOUTS}.')
         self.layout = layout
-        if preprocess == None:
-            preprocess = IMSPreprocess()
 
         # samples parameters
         assert seq_len <= self.raw_seq_len, f'seq_len must not be larger than raw_seq_len = {raw_seq_len}, got {seq_len}.'
@@ -77,7 +85,27 @@ class IMSDataset(Dataset):
         self.stride = stride
         self.shuffle = shuffle
         self.shuffle_seed = int(shuffle_seed)
-        self.preprocess = preprocess
+
+        max_width = IMS_DATA_SHAPE[self.img_type][0]
+        assert 0 <= left <= max_width
+        if width is not None:
+            assert 0 <= width <= max_width
+            self.width = width
+        else:
+            self.width = max_width
+
+        max_height = IMS_DATA_SHAPE[self.img_type][1]
+        assert 0 <= top <= max_height
+        if height is not None:
+            assert 0 <= height <= max_height
+            self.height = height
+        else:
+            self.height = max_height
+
+        self.img_shape = (width, height, 1 if grayscale else IMS_DATA_SHAPE[self.img_type][2])
+
+        self.preprocess = IMSPreprocess(grayscale=grayscale, crop=dict(left=left, top=top, width=width, height=height),
+                                        scale=scale)
 
         # setup
         self._events = None
@@ -85,11 +113,6 @@ class IMSDataset(Dataset):
 
         self._load_events()
         self._open_files()
-
-    def _load_events(self):
-        self._events = self.catalog[self.catalog.img_type == self.img_type]
-        if self.shuffle:
-            self._events = self._events.sample(frac=1, random_state=self.shuffle_seed)
 
     def _open_files(self):
         file_names = self._events['file_name'].unique()
@@ -145,9 +168,9 @@ class IMSPreprocess:
             relevant_transforms.append(transforms.Lambda(lambda t: (t * 255).to(torch.uint8)))
 
         # convert to grayscale (1 x H x W) if necessary
-        if grayscale: # TODO: when the image is akready in grayscale this creates bug
+        if grayscale: # TODO: when the image is already in grayscale this creates bug
             relevant_transforms.append(transforms.Lambda(lambda x: x[:3, :, :]))
-            relevant_transforms.append(transforms.Grayscale())
+            relevant_transforms.append(transforms.Lambda(lambda x: transforms.Grayscale(x) if x.shape[0] > 1 else x))
 
         # crop image if necessary
         if len(crop.keys()) > 0:

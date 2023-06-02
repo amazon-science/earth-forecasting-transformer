@@ -1,31 +1,27 @@
 dataset:
   dataset_name: "ims"
   img_type: "MIDDLE_EAST_VIS"
-  img_height: 600
-  img_width: 600
-  in_len: 15
-  out_len: 5
   seq_len: 20
-  plot_stride: 2
-  interval_real_time: 5
-  sample_mode: "sequent"
+  raw_seq_len: 149
   stride: 12
   layout: "THWC"
+  batch_layout: "NTHWC"
   ims_catalog: null
   ims_data_dir: null
   start_date: [2023, 1, 1]
   train_val_split_date: [2023, 2, 1]
   train_test_split_date: [2023, 3, 1]
   end_date: [2023, 4, 1]
-  metrics_mode: "0"
-  metrics_list: ['csi', 'pod', 'sucr', 'bias']
-  threshold_list: [16, 74, 133, 160, 181, 219]
-layout:
-  in_len: 15
-  out_len: 5
-  batch_layout: "NTHWC"
+  preprocess:
+    grayscale: true
+    crop:
+      top: 100
+      left: 200
+      height: 384
+      width: 384
+    scale: true
 optim:
-  total_batch_size: 32
+  total_batch_size: 16
   micro_batch_size: 1
   num_workers: 1
   seed: 0
@@ -50,26 +46,29 @@ logging:
   monitor_device: false
   track_grad_norm: -1
   use_wandb: false
+  plot_stride: 2
+  metrics_mode: "0"
+  metrics_list: [ 'csi', 'pod', 'sucr', 'bias' ]
+  threshold_list: [ 16, 74, 133, 160, 181, 219 ]
 trainer:
   check_val_every_n_epoch: 1
   log_step_ratio: 0.001
+  precision: 32
+  accelerator: gpu
 model:
-  input_shape: [15, 600, 600, 1]
-  target_shape: [5, 600, 600, 1]
+  in_len: 15
+  out_len: 5
   base_units: 128
   block_units: null
   scale_alpha: 1.0
-
   enc_depth: [1, 1]
   dec_depth: [1, 1]
   enc_use_inter_ffn: true
   dec_use_inter_ffn: true
   dec_hierarchical_pos_embed: false
-
   downsample: 2
   downsample_type: "patch_merge"
   upsample_type: "upsample"
-
   num_global_vectors: 8
   use_dec_self_global: false
   dec_self_update_global: true
@@ -78,17 +77,14 @@ model:
   use_global_self_attn: true
   separate_global_qkv: true
   global_dim_ratio: 1
-
   self_pattern: "axial"
   cross_self_pattern: "axial"
   cross_pattern: "cross_1x1"
   dec_cross_last_n_frames: null
-
   attn_drop: 0.1
   proj_drop: 0.1
   ffn_drop: 0.1
   num_heads: 4
-
   ffn_activation: "gelu"
   gated_ffn: false
   norm_layer: "layer_norm"
@@ -97,17 +93,14 @@ model:
   use_relative_pos: true
   self_attn_use_final_proj: true
   dec_use_first_self_attn: false
-
   z_init_method: "zeros"
   checkpoint_level: 0
-
   initial_downsample_type: "stack_conv"
   initial_downsample_activation: "leaky"
   initial_downsample_stack_conv_num_layers: 3
   initial_downsample_stack_conv_dim_list: [16, 64, 128]
   initial_downsample_stack_conv_downscale_list: [3, 2, 2]
   initial_downsample_stack_conv_num_conv_list: [2, 2, 2]
-
   attn_linear_init_mode: "0"
   ffn_linear_init_mode: "0"
   conv_init_mode: "0"

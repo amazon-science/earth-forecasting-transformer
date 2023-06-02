@@ -60,3 +60,6 @@ class IMSLightningDataModule(LightningDataModule):
 
     def predict_dataloader(self):
         return DataLoader(self.ims_predict, batch_size=self.batch_size, num_workers=self.num_workers)
+
+    def get_hwc(self):
+        return self.ims_train.img_shape
