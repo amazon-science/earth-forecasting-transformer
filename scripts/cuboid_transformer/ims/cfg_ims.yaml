@@ -48,11 +48,8 @@ logging:
   use_tensorbaord: true
   use_csv: true
   use_wandb: true
-  examples: [ 1, 2, 3 ]
+  examples: [ 1, 2, 3, 50, 51, 52, 60, 100 ]
   plot_stride: 2
-  metrics_mode: "0"
-  metrics_list: [ 'csi', 'pod', 'sucr', 'bias' ]
-  threshold_list: [ 16, 74, 133, 160, 181, 219 ]
 trainer:
   check_val_every_n_epoch: 1
   log_step_ratio: 0.001

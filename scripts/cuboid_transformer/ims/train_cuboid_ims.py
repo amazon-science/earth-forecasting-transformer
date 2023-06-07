@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import loggers as pl_loggers
+import logging
 import wandb
 
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, DeviceStatsMonitor
@@ -47,7 +48,7 @@ class CuboidIMSModule(pl.LightningModule):
         self.torch_nn_module = self._get_torch_nn_module()
 
         self.train_loss = F.mse_loss
-        self.validation_loss = F.mse_loss
+        self.validation_loss = torchmetrics.MeanSquaredError() # TODO: why they are different?
 
         # total_num_steps = (number of epochs) * (number of batches in the train data)
         self.total_num_steps = int(self.hparams.optim.max_epochs *
@@ -97,7 +98,7 @@ class CuboidIMSModule(pl.LightningModule):
 
         # ModelCheckpoint allows fine-grained control over checkpointing
         checkpoint_callback = ModelCheckpoint(
-            monitor="val_loss_step",
+            monitor="val_loss_epoch",
             filename="model-{epoch:03d}",
             save_top_k=self.hparams.optim.save_top_k,
             save_last=True,
@@ -174,7 +175,11 @@ class CuboidIMSModule(pl.LightningModule):
 
         loss = self.validation_loss(y_hat, y)
         self.log('val_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False, logger=True)
-        return None
+
+    def validation_epoch_end(self, outputs):
+        epoch_loss = self.validation_loss.compute()
+        self.log("val_loss_epoch", epoch_loss)
+        self.validation_loss.reset()
 
     def _get_dm(self):
         dm = IMSLightningDataModule(start_date=datetime(*self.hparams.dataset.start_date),
@@ -299,10 +304,11 @@ def get_parser():
 
 
 def main():
+    logging.getLogger("lightning").setLevel(logging.ERROR) # suppress WARN massages in console
+
     parser = get_parser()
     args = parser.parse_args()
 
-    # TODO: seed_everything
     # TODO: start from a saved checkpoint with l_model.load_from_checkpoint(PATH)
     # TODO: config optimizer
     # TODO: test from a pretrained checkpoint like sevir did
@@ -312,6 +318,9 @@ def main():
                               cfg_file_path=args.cfg)
     # data
     dm = l_model.dm
+
+    # seed
+    seed_everything(seed=l_model.hparams.optim.seed, workers=True)
 
     # train model
     trainer_kwargs = l_model.get_trainer_kwargs(args.gpus)
