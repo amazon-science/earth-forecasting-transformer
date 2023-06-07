@@ -116,9 +116,11 @@ class IMSDataset(Dataset):
 
     def _open_files(self):
         file_names = self._events['file_name'].unique()
-        # TODO: get year and img_type from h5 file name and add to the path of the file
         for f in file_names:
-            self._hdf_files[f] = h5py.File(os.path.join(self.ims_data_dir, f), 'r')
+            events = self._events[self._events['file_name'] == f]
+            img_type = events.iloc[0]['img_type']
+            year = str(events.iloc[0]['time_utc'].year)
+            self._hdf_files[f] = h5py.File(os.path.join(self.ims_data_dir, img_type, year,  f), 'r')
 
     def _idx_sample(self, index):
         event_idx = index // self.num_seq_per_event

@@ -29,7 +29,7 @@ optim:
   lr: 0.001
   wd: 0.0
   gradient_clip_val: 1.0
-  max_epochs: 1
+  max_epochs: 2
   # scheduler
   lr_scheduler_mode: "cosine"
   min_lr_ratio: 1.0e-3
@@ -45,7 +45,10 @@ logging:
   monitor_lr: true
   monitor_device: false
   track_grad_norm: -1
-  use_wandb: false
+  use_tensorbaord: true
+  use_csv: true
+  use_wandb: true
+  examples: [ 1, 2, 3 ]
   plot_stride: 2
   metrics_mode: "0"
   metrics_list: [ 'csi', 'pod', 'sucr', 'bias' ]

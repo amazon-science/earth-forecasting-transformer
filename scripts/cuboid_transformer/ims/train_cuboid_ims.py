@@ -1,6 +1,7 @@
 import pytorch_lightning as pl
 from pytorch_lightning import seed_everything
 from pytorch_lightning import loggers as pl_loggers
+import wandb
 
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, DeviceStatsMonitor
 from earthformer.utils.apex_ddp import ApexDDPStrategy
@@ -47,6 +48,8 @@ class CuboidIMSModule(pl.LightningModule):
 
         self.train_loss = F.mse_loss
         self.validation_loss = F.mse_loss
+
+        # total_num_steps = (number of epochs) * (number of batches in the train data)
         self.total_num_steps = int(self.hparams.optim.max_epochs *
                                    len(self.dm.ims_train) /
                                    self.hparams.optim.total_batch_size)
@@ -64,10 +67,7 @@ class CuboidIMSModule(pl.LightningModule):
         y_hat = self(x)
         loss = self.train_loss(y_hat, y)
 
-        # TODO: check the logging
-        self.log('train_loss', loss,
-                 on_step=True, on_epoch=False)
-
+        self.log('train_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False, logger=True)
         return loss
 
     def predict_step(self, batch, batch_idx):
@@ -86,21 +86,8 @@ class CuboidIMSModule(pl.LightningModule):
         r"""
         Default kwargs used when initializing pl.Trainer
         """
-
-        # TODO:
-        # originally, train_cuboid_sevir.py created a ModelCheckpoint object
-        # that was based on the logging of validation_epoch_end. We removed
-        # this object because checkpointing is already done without it.
-        # checkpoint_callback = ModelCheckpoint(
-        #     monitor="valid_loss_epoch",
-        #     filename="model-{epoch:03d}",
-        #     save_top_k=self.oc.optim.save_top_k,
-        #     save_last=True,
-        #     mode="min",
-        # )
-
         # TODO: early stopping not implemented currently
-        # because it depends on SEVIRSkillScore objects 
+        # because it depends on SEVIRSkillScore objects
         # if self.hparams.optim.early_stop:
         #     callbacks += [EarlyStopping(monitor="valid_loss_epoch",
         #                                 min_delta=0.0,
@@ -108,22 +95,53 @@ class CuboidIMSModule(pl.LightningModule):
         #                                 verbose=False,
         #                                 mode=self.oc.optim.early_stop_mode), ]
 
+        # ModelCheckpoint allows fine-grained control over checkpointing
+        checkpoint_callback = ModelCheckpoint(
+            monitor="val_loss_step",
+            filename="model-{epoch:03d}",
+            save_top_k=self.hparams.optim.save_top_k,
+            save_last=True,
+            mode="min",
+            dirpath=self.logging_dir
+        )
+
         callbacks = []
-        # callbacks += [checkpoint_callback, ]
+        callbacks += [checkpoint_callback, ]
         if self.hparams.logging.monitor_lr:
             callbacks += [LearningRateMonitor(logging_interval='step'), ]
         if self.hparams.logging.monitor_device:
             callbacks += [DeviceStatsMonitor(), ]
 
-        tb_logger = pl_loggers.TensorBoardLogger(save_dir=self.logging_dir)
-        csv_logger = pl_loggers.CSVLogger(save_dir=self.logging_dir)
+        # logging
+        loggers = []
+        """ 
+        TensorBoardLogger - to see the metrics run the following commands on timon:
+        cd leah/cloud-forecasting-transformer/
+        tensorboard --logdir scripts/cuboid_transformer/ims/logging/lightning_logs --bind_all
+        
+        Then, go to chrome and connect http://http://192.168.0.177/:6006/.
+        """
+        if self.hparams.logging.use_tensorbaord:
+            loggers.append(pl_loggers.TensorBoardLogger(save_dir=self.logging_dir))
+
+        """
+        CSVLogger
+        """
+        if self.hparams.logging.use_csv:
+            loggers.append(pl_loggers.CSVLogger(save_dir=self.logging_dir))
+
+        """
+        WandbLogger
+        """
+        if self.hparams.logging.use_wandb:
+            loggers.append(pl_loggers.WandbLogger(project="cloud-forecasting-transformer", save_dir=self.logging_dir))
 
         trainer_kwargs = dict(
             devices=gpus,
             accumulate_grad_batches=self.hparams.optim.total_batch_size // (self.hparams.optim.micro_batch_size * gpus),
             callbacks=callbacks,
             # log
-            logger=[tb_logger, csv_logger],
+            logger=loggers,
             log_every_n_steps=max(1, int(self.hparams.trainer.log_step_ratio * self.total_num_steps)),
             track_grad_norm=self.hparams.logging.track_grad_norm,
             # save
@@ -144,10 +162,18 @@ class CuboidIMSModule(pl.LightningModule):
         x, y = self._get_x_y_from_batch(batch)
         y_hat = self(x)
 
-        # TODO: original code saved images of specific examples (save_vis_step_end)
+        data_idx = int(batch_idx * self.hparams.optim.micro_batch_size) # TODO: verify we know what it means
+        if data_idx in self.hparams.logging.examples:
+            if self.hparams.logging.use_wandb:
+                x_images = [wandb.Image(image.detach().float().cpu().numpy()) for image in x[0]]
+                y_images = [wandb.Image(image.detach().float().cpu().numpy()) for image in y[0]]
+                y_hat_images = [wandb.Image(image.detach().float().cpu().numpy()) for image in y_hat[0]]
+
+                wandb.log({"x": x_images, "y": y_images, "y_hat": y_hat_images})
+            # TODO: original code saved images of specific examples (save_vis_step_end)
 
         loss = self.validation_loss(y_hat, y)
-        self.log('val_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False)
+        self.log('val_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False, logger=True)
         return None
 
     def _get_dm(self):
@@ -263,7 +289,7 @@ def get_parser():
     parser.add_argument('--logging-dir', default=None, type=str)
     parser.add_argument('--gpus', default=1, type=int)
     parser.add_argument('--cfg', default=None, type=str)
-    # TODO: return to these arguments when it will be relevant
+    # TODO: return to these arguments when they will be relevant
     # parser.add_argument('--test', action='store_true')
     # parser.add_argument('--pretrained', action='store_true',
     #                     help='Load pretrained checkpoints for test.')
@@ -277,21 +303,20 @@ def main():
     args = parser.parse_args()
 
     # TODO: seed_everything
-    # TODO: start from a saved checkpoint
+    # TODO: start from a saved checkpoint with l_model.load_from_checkpoint(PATH)
     # TODO: config optimizer
+    # TODO: test from a pretrained checkpoint like sevir did
 
     # model
     l_model = CuboidIMSModule(logging_dir=args.logging_dir,
                               cfg_file_path=args.cfg)
-
     # data
     dm = l_model.dm
 
     # train model
     trainer_kwargs = l_model.get_trainer_kwargs(args.gpus)
     trainer = pl.Trainer(**trainer_kwargs)
-    trainer.fit(model=l_model, train_dataloaders=dm.train_dataloader())
-
+    trainer.fit(model=l_model, datamodule=dm)
 
 if __name__ == "__main__":
     main()
