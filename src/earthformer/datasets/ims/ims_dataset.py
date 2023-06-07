@@ -71,7 +71,7 @@ class IMSDataset(Dataset):
             self.catalog = self.catalog[self.catalog.time_utc > self.start_date]
         if self.end_date is not None:
             self.catalog = self.catalog[self.catalog.time_utc <= self.end_date]
-        this.time_delta = time_delta
+        self.time_delta = time_delta
         if layout not in VALID_LAYOUTS:
             raise ValueError(f'Invalid layout = {layout}! Must be one of {VALID_LAYOUTS}.')
         self.layout = layout

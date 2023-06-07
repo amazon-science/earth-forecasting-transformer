@@ -12,6 +12,7 @@ dataset:
   train_val_split_date: [2023, 2, 1]
   train_test_split_date: [2023, 3, 1]
   end_date: [2023, 4, 1]
+  time_delta: 5
   preprocess:
     grayscale: true
     crop:
@@ -48,8 +49,14 @@ logging:
   use_tensorbaord: true
   use_csv: true
   use_wandb: true
-  examples: [ 1, 2, 3, 50, 51, 52, 60, 100 ]
-  plot_stride: 2
+  visualize:
+    train_example_data_idx_list: [ 0, ]
+    val_example_data_idx_list: [ 80, ]
+    test_example_data_idx_list: [ 0, 80, 160, 240, 320, 400 ]
+    eval_example_only: false
+    fs: 10
+    figsize: [ 24, 8 ]
+    plot_stride: 2
 trainer:
   check_val_every_n_epoch: 1
   log_step_ratio: 0.001
@@ -106,9 +113,3 @@ model:
   conv_init_mode: "0"
   down_up_linear_init_mode: "0"
   norm_init_mode: "0"
-vis:
-  train_example_data_idx_list: [0, ]
-  val_example_data_idx_list: [80, ]
-  test_example_data_idx_list: [0, 80, 160, 240, 320, 400]
-  eval_example_only: false
-  plot_stride: 2

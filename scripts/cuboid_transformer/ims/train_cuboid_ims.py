@@ -15,7 +15,7 @@ import torchmetrics
 
 from src.earthformer.datasets.ims.ims_datamodule import IMSLightningDataModule
 from src.earthformer.cuboid_transformer.cuboid_transformer import CuboidTransformerModel
-from src.earthformer.visualization.ims.ims_vis_seq import save_example_vis_results
+from src.earthformer.visualization.ims.ims_visualize import IMSVisualize
 
 from datetime import datetime
 from omegaconf import OmegaConf
@@ -35,9 +35,6 @@ class CuboidIMSModule(pl.LightningModule):
         else:
             self.cfg_file_path = cfg_file_path
 
-        self.logging_dir, self.scores_dir, self.example_save_dir = \
-            self.init_logging()
-
         # save hyperparams
         train_cfg = OmegaConf.load(open(self.cfg_file_path, "r"))
         self.save_hyperparameters(train_cfg)
@@ -49,33 +46,44 @@ class CuboidIMSModule(pl.LightningModule):
         self.torch_nn_module = self._get_torch_nn_module()
 
         self.train_loss = F.mse_loss
-        self.validation_loss = torchmetrics.MeanSquaredError() # TODO: why they are different?
+        self.validation_loss = torchmetrics.MeanSquaredError()  # TODO: why they are different?
 
         # total_num_steps = (number of epochs) * (number of batches in the train data)
         self.total_num_steps = int(self.hparams.optim.max_epochs *
                                    len(self.dm.ims_train) /
                                    self.hparams.optim.total_batch_size)
 
-    def init_logging(self, logging_dir: str = None):
+        # create logging directories and set up logging
+        self._init_logging()
+
+    def _init_logging(self, logging_dir: str = None):
         # creates logging directories and adds their path as data members
 
         if logging_dir is None:
-            logging_dir = os.path.join(os.path.dirname(__file__), "logging")  # TODO: create if not present
-        
-        scores_dir = os.path.join(logging_dir, 'scores')
-        example_save_dir = os.path.join(logging_dir, "examples")
-        
-        os.makedirs(logging_dir, exist_ok=True)
-        os.makedirs(scores_dir, exist_ok=True)
-        os.makedirs(example_save_dir, exist_ok=True)
-        
-        # save a copy of the current config inside the logging dir
-        cfg_file_target_path = os.path.join(logging_dir, "cfg.yaml")
-        if  (not os.path.exists(cfg_file_target_path)) or \
-            (not os.path.samefile(self.cfg_file_path, cfg_file_target_path)):
-            copyfile(self.cfg_file_path, cfg_file_target_path)
+            logging_dir = os.path.join(os.path.dirname(__file__), "logging")
 
-        return logging_dir, scores_dir, example_save_dir
+        self.logging_dir = logging_dir
+        self.scores_dir = os.path.join(self.logging_dir, "scores")
+        self.examples_dir = os.path.join(self.logging_dir, "examples")
+        self.checkpoints_dir = os.path.join(self.logging_dir, "checkpoints")
+
+        os.makedirs(self.logging_dir, exist_ok=True)
+        os.makedirs(self.scores_dir, exist_ok=True)
+        os.makedirs(self.examples_dir, exist_ok=True)
+        os.makedirs(self.checkpoints_dir, exist_ok=True)
+
+        # get visualization config
+        self.visualize = IMSVisualize(save_dir=self.examples_dir,
+                                      scale=self.hparams.dataset.preprocess.scale,
+                                      fs=self.hparams.logging.visualize.fs,
+                                      figsize=self.hparams.logging.visualize.figsize,
+                                      plot_stride=self.hparams.logging.visualize.plot_stride)
+
+        # save a copy of the current config inside the logging dir
+        cfg_file_target_path = os.path.join(self.logging_dir, "cfg.yaml")
+        if (not os.path.exists(cfg_file_target_path)) or \
+                (not os.path.samefile(self.cfg_file_path, cfg_file_target_path)):
+            copyfile(self.cfg_file_path, cfg_file_target_path)
 
     def _get_x_y_from_batch(self, batch):
         # batch.shape is (N, T, H, W, C)
@@ -89,9 +97,15 @@ class CuboidIMSModule(pl.LightningModule):
         x, y = self._get_x_y_from_batch(batch)
         y_hat = self(x)
         loss = self.train_loss(y_hat, y)
-        
+
         data_idx = int(batch_idx * self.hparams.optim.micro_batch_size)
-        self.save_vis_step_end(data_idx, x, y, y_hat, mode="train")
+
+        # save our visualization
+        self.save_visualization(in_seq=x[0],
+                                target_seq=y[0],
+                                pred_seq_list=y_hat[0],
+                                data_idx=data_idx,
+                                mode="train")
 
         self.log('train_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False, logger=True)
         return loss
@@ -128,7 +142,7 @@ class CuboidIMSModule(pl.LightningModule):
             save_top_k=self.hparams.optim.save_top_k,
             save_last=True,
             mode="min",
-            dirpath=self.logging_dir
+            dirpath=self.checkpoints_dir
         )
 
         callbacks = []
@@ -188,16 +202,16 @@ class CuboidIMSModule(pl.LightningModule):
         x, y = self._get_x_y_from_batch(batch)
         y_hat = self(x)
 
-        data_idx = int(batch_idx * self.hparams.optim.micro_batch_size) # TODO: verify we know what it means
-        if data_idx in self.hparams.logging.examples:
-            if self.hparams.logging.use_wandb:
-                x_images = [wandb.Image(image.detach().float().cpu().numpy()) for image in x[0]]
-                y_images = [wandb.Image(image.detach().float().cpu().numpy()) for image in y[0]]
-                y_hat_images = [wandb.Image(image.detach().float().cpu().numpy()) for image in y_hat[0]]
+        # TODO: verify we know what it means, seems like the first in any microbatch
+        data_idx = int(
+            batch_idx * self.hparams.optim.micro_batch_size)
 
-                wandb.log({"x": x_images, "y": y_images, "y_hat": y_hat_images})
-            
-        self.save_vis_step_end(data_idx, x, y, y_hat, mode="val")
+        # save our visualization
+        self.save_visualization(in_seq=x[0],
+                                target_seq=y[0],
+                                pred_seq_list=y_hat[0],
+                                data_idx=data_idx,
+                                mode="val")
 
         loss = self.validation_loss(y_hat, y)
         self.log('val_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False, logger=True)
@@ -207,39 +221,41 @@ class CuboidIMSModule(pl.LightningModule):
         self.log("val_loss_epoch", epoch_loss)
         self.validation_loss.reset()
 
-    def save_vis_step_end(
+    def save_visualization(
             self,
             data_idx: int,
             in_seq: torch.Tensor,
             target_seq: torch.Tensor,
-            pred_seq: torch.Tensor,
+            pred_seq_list: torch.Tensor,
             mode: str = "train"):
-        r"""
-        Parameters
-        ----------
-        data_idx:   int
-            data_idx == batch_idx * micro_batch_size
-        """
-        if (not hasattr(self, local_rank)) or (self.local_rank == 0):
-            if mode == "train":
-                example_data_idx_list = self.hparams.vis.train_example_data_idx_list
-            elif mode == "val":
-                example_data_idx_list = self.hparams.vis.val_example_data_idx_list
-            elif mode == "test":
-                example_data_idx_list = self.hparams.vis.test_example_data_idx_list
-            else:
-                raise ValueError(f"Wrong mode {mode}! Must be in ['train', 'val', 'test'].")
-            if data_idx in example_data_idx_list:
-                save_example_vis_results(
-                    save_dir=self.example_save_dir,
-                    save_prefix=f'{mode}_epoch_{self.current_epoch}_data_{data_idx}',
-                    in_seq=in_seq.detach().float().cpu().numpy(),
-                    target_seq=target_seq.detach().float().cpu().numpy(),
-                    pred_seq=pred_seq.detach().float().cpu().numpy(),
-                    layout=self.layout,
-                    plot_stride=self.hparams.vis.plot_stride,
-                    label=self.hparams.logging.logging_prefix,
-                    interval_real_time=self.hparams.dataset.interval_real_time)
+
+        if mode == "train":
+            example_data_idx_list = self.hparams.logging.visualize.train_example_data_idx_list
+        elif mode == "val":
+            example_data_idx_list = self.hparams.logging.visualize.val_example_data_idx_list
+        elif mode == "test":
+            example_data_idx_list = self.hparams.logging.visualize.test_example_data_idx_list
+        else:
+            raise ValueError(f"Wrong mode {mode}! Must be in ['train', 'val', 'test'].")
+
+        in_seq = in_seq.detach().float().cpu().numpy()
+        target_seq = target_seq.detach().float().cpu().numpy()
+        pred_seq_list = pred_seq_list.detach().float().cpu().numpy()
+
+        if data_idx in example_data_idx_list:
+            self.visualize.save_example(save_prefix=f'{mode}_epoch_{self.current_epoch}_data_{data_idx}',
+                                        in_seq=in_seq,
+                                        target_seq=target_seq,
+                                        pred_seq_list=[pred_seq_list],
+                                        time_delta=self.hparams.dataset.time_delta,
+                                        )
+
+            if self.hparams.logging.use_wandb:
+                x_images = [wandb.Image(image) for image in in_seq]
+                y_images = [wandb.Image(image) for image in target_seq]
+                y_hat_images = [wandb.Image(image) for image in pred_seq_list]
+
+                wandb.log({"x": x_images, "y": y_images, "y_hat": y_hat_images})
 
     def _get_dm(self):
         dm = IMSLightningDataModule(start_date=datetime(*self.hparams.dataset.start_date),
@@ -253,6 +269,7 @@ class CuboidIMSModule(pl.LightningModule):
                                     img_type=self.hparams.dataset.img_type,
                                     seq_len=self.hparams.dataset.seq_len,
                                     stride=self.hparams.dataset.stride,
+                                    time_delta=self.hparams.dataset.time_delta,
                                     layout=self.hparams.dataset.layout,
                                     ims_catalog=self.hparams.dataset.ims_catalog,
                                     ims_data_dir=self.hparams.dataset.ims_data_dir,
@@ -364,7 +381,7 @@ def get_parser():
 
 
 def main():
-    logging.getLogger("lightning").setLevel(logging.ERROR) # suppress WARN massages in console
+    logging.getLogger("lightning").setLevel(logging.ERROR)  # suppress WARN massages in console
 
     parser = get_parser()
     args = parser.parse_args()
@@ -386,6 +403,7 @@ def main():
     trainer_kwargs = l_model.get_trainer_kwargs(args.gpus)
     trainer = pl.Trainer(**trainer_kwargs)
     trainer.fit(model=l_model, datamodule=dm)
+
 
 if __name__ == "__main__":
     main()
