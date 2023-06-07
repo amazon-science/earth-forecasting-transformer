@@ -27,11 +27,6 @@ IMS_DATA_DIR = os.path.join(IMS_ROOT_DIR, "data")
 
 
 class IMSDataset(Dataset):
-    def _load_events(self):
-        self._events = self.catalog[self.catalog.img_type == self.img_type]
-        if self.shuffle:
-            self._events = self._events.sample(frac=1, random_state=self.shuffle_seed)
-
     def __init__(self,
                  img_type: str = 'MIDDLE_EAST_VIS',
                  seq_len: int = 49,
@@ -42,6 +37,7 @@ class IMSDataset(Dataset):
                  ims_data_dir: str = None,
                  start_date: datetime.datetime = None,
                  end_date: datetime.datetime = None,
+                 time_delta: int = 5,
                  shuffle: bool = False,
                  shuffle_seed: int = 1,
                  grayscale: bool = False,
@@ -75,6 +71,7 @@ class IMSDataset(Dataset):
             self.catalog = self.catalog[self.catalog.time_utc > self.start_date]
         if self.end_date is not None:
             self.catalog = self.catalog[self.catalog.time_utc <= self.end_date]
+        this.time_delta = time_delta
         if layout not in VALID_LAYOUTS:
             raise ValueError(f'Invalid layout = {layout}! Must be one of {VALID_LAYOUTS}.')
         self.layout = layout
@@ -113,6 +110,11 @@ class IMSDataset(Dataset):
 
         self._load_events()
         self._open_files()
+    
+    def _load_events(self):
+        self._events = self.catalog[self.catalog.img_type == self.img_type]
+        if self.shuffle:
+            self._events = self._events.sample(frac=1, random_state=self.shuffle_seed)
 
     def _open_files(self):
         file_names = self._events['file_name'].unique()
