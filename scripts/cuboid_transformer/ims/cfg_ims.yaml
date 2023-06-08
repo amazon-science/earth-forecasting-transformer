@@ -43,6 +43,7 @@ optim:
   save_top_k: 1
 logging:
   logging_prefix: "Cuboid_IMS"
+  first_version_num: 1
   monitor_lr: true
   monitor_device: false
   track_grad_norm: -1

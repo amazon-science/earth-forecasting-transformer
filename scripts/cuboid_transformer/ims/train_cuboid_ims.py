@@ -64,18 +64,29 @@ class CuboidIMSModule(pl.LightningModule):
     def _init_logging(self, logging_dir: str = None):
         # creates logging directories and adds their path as data members
 
+
         if logging_dir is None:
             logging_dir = os.path.join(os.path.dirname(__file__), "logging")
 
         self.logging_dir = logging_dir
         self.scores_dir = os.path.join(self.logging_dir, "scores")
-        self.examples_dir = os.path.join(self.logging_dir, "examples")
+        self.examples_root_dir = os.path.join(self.logging_dir, "examples")
         self.checkpoints_dir = os.path.join(self.logging_dir, "checkpoints")
 
         os.makedirs(self.logging_dir, exist_ok=True)
         os.makedirs(self.scores_dir, exist_ok=True)
-        os.makedirs(self.examples_dir, exist_ok=True)
+        os.makedirs(self.examples_root_dir, exist_ok=True)
         os.makedirs(self.checkpoints_dir, exist_ok=True)
+
+        # add curr version subfolder to examples 
+        max_version_num = self.hparams.logging.first_version_num
+        for f in os.listdir(self.examples_root_dir):
+            if os.path.isdir(f):
+                if (f.split("_")[-1]).isnumeric():
+                    max_version_num = max(max_version_num, int(f.split("_")[-1]))
+
+        self.examples_dir = os.path.join(self.examples_root_dir, str(max_version_num))
+        os.makedirs(self.examples_dir, exist_ok=True)
 
         # get visualization config
         self.visualize = IMSVisualize(save_dir=self.examples_dir,
