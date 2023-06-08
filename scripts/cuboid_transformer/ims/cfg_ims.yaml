@@ -30,10 +30,10 @@ optim:
   lr: 0.001
   wd: 0.0
   gradient_clip_val: 1.0
-  max_epochs: 20
+  max_epochs: 50
   # scheduler
   lr_scheduler_mode: "cosine"
-  min_lr_ratio: 1.0e-3
+  min_lr_ratio: 1.0e-1
   warmup_min_lr_ratio: 0.0
   warmup_percentage: 0.2
   # early stopping
@@ -50,7 +50,7 @@ logging:
   use_csv: true
   use_wandb: true
   visualize:
-    train_example_data_idx_list: [ 0, ]
+    train_example_data_idx_list: [ 0, 10, 20 ,50 ]
     val_example_data_idx_list: [ 0, 10, 20, 50 ]
     test_example_data_idx_list: [ 0, 80, 160, 240, 320, 400 ]
     eval_example_only: false
