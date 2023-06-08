@@ -3,19 +3,24 @@ from pytorch_lightning import seed_everything
 from pytorch_lightning import loggers as pl_loggers
 import logging
 import wandb
+
 from shutil import copyfile
+import numpy as np
 
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, DeviceStatsMonitor
 from src.earthformer.utils.apex_ddp import ApexDDPStrategy
 
 import torch
 from torch.optim import AdamW
+from torch.optim.lr_scheduler import LambdaLR, CosineAnnealingLR
 from torch.nn import functional as F
 import torchmetrics
 
 from src.earthformer.datasets.ims.ims_datamodule import IMSLightningDataModule
 from src.earthformer.cuboid_transformer.cuboid_transformer import CuboidTransformerModel
 from src.earthformer.visualization.ims.ims_visualize import IMSVisualize
+
+from earthformer.utils.optim import SequentialLR, warmup_lambda
 
 from datetime import datetime
 from omegaconf import OmegaConf
@@ -107,7 +112,7 @@ class CuboidIMSModule(pl.LightningModule):
                                 data_idx=data_idx,
                                 mode="train")
 
-        self.log('train_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False, logger=True)
+        self.log('train_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False)
         return loss
 
     def predict_step(self, batch, batch_idx):
@@ -120,7 +125,28 @@ class CuboidIMSModule(pl.LightningModule):
                               weight_decay=self.hparams.optim.wd)
         else:
             raise NotImplementedError
-        return optimizer
+
+        warmup_iter = int(np.round(self.hparams.optim.warmup_percentage * self.total_num_steps))
+
+        if self.hparams.optim.lr_scheduler_mode == 'cosine':
+            warmup_scheduler = LambdaLR(optimizer,
+                                        lr_lambda=warmup_lambda(warmup_steps=warmup_iter,
+                                                                min_lr_ratio=self.hparams.optim.warmup_min_lr_ratio))
+            cosine_scheduler = CosineAnnealingLR(optimizer,
+                                                 T_max=(self.total_num_steps - warmup_iter),
+                                                 eta_min=self.hparams.optim.min_lr_ratio * self.hparams.optim.lr)
+            lr_scheduler = SequentialLR(optimizer, schedulers=[warmup_scheduler, cosine_scheduler],
+                                        milestones=[warmup_iter])
+            lr_scheduler_config = {
+                'scheduler': lr_scheduler,
+                'interval': 'step',
+                'frequency': 1,
+            }
+
+        else:
+            raise NotImplementedError
+
+        return {'optimizer': optimizer, 'lr_scheduler': lr_scheduler_config}
 
     def get_trainer_kwargs(self, gpus):
         r"""
@@ -214,11 +240,11 @@ class CuboidIMSModule(pl.LightningModule):
                                 mode="val")
 
         loss = self.validation_loss(y_hat, y)
-        self.log('val_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False, logger=True)
+        self.log('val_loss_step', loss, prog_bar=True, on_step=True, on_epoch=False)
 
     def validation_epoch_end(self, outputs):
         epoch_loss = self.validation_loss.compute()
-        self.log("val_loss_epoch", epoch_loss)
+        self.log("val_loss_epoch", epoch_loss, sync_dist=True, on_epoch=True)
         self.validation_loss.reset()
 
     def save_visualization(
@@ -255,7 +281,7 @@ class CuboidIMSModule(pl.LightningModule):
                 y_images = [wandb.Image(image) for image in target_seq]
                 y_hat_images = [wandb.Image(image) for image in pred_seq_list]
 
-                wandb.log({"x": x_images, "y": y_images, "y_hat": y_hat_images})
+                wandb.log({f"{mode}": {"x": x_images, "y": y_images, "y_hat": y_hat_images}})
 
     def _get_dm(self):
         dm = IMSLightningDataModule(start_date=datetime(*self.hparams.dataset.start_date),

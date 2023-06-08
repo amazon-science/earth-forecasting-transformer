@@ -18,16 +18,11 @@ class IMSVisualize:
         self.plot_stride = plot_stride
 
     def _plot_seq(self, ax, row, label, seq, seq_len, max_len):
-        cmap_dict = lambda s: {'cmap': get_cmap(s, encoded=True)[0],
-                               'norm': get_cmap(s, encoded=True)[1],
-                               'vmin': get_cmap(s, encoded=True)[2],
-                               'vmax': get_cmap(s, encoded=True)[3]}
-
         ax[row][0].set_ylabel(label, fontsize=self.fs)
         for i in range(0, max_len, self.plot_stride):
             if i < seq_len:
                 xt = seq[i, :, :, :] * (255 if self.scale else 1)
-                ax[row][i // self.plot_stride].imshow(xt, **cmap_dict('vil'))
+                ax[row][i // self.plot_stride].imshow(xt)
             else:
                 ax[row][i // self.plot_stride].axis('off')
 
@@ -51,7 +46,7 @@ class IMSVisualize:
             self._plot_seq(ax, k + 2, label_list[k] + "\nPrediction", pred_seq_list[k], out_len, max_len)
 
         for i in range(0, max_len, self.plot_stride):
-            if i < out_len:
+            if i < max_len:
                 ax[-1][i // self.plot_stride].set_title(f'{int(time_delta * (i + self.plot_stride))} Minutes', y=-0.25)
 
         # TODO: what is this???
