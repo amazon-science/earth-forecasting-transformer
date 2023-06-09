@@ -1,10 +1,11 @@
 {
-  "catalog_file_path": "/ims_projects/Research/Oren/Lia_Ofir/ims_data/CATALOG.csv",
+  "catalog_file_path": "CATALOG.csv",
   "catalog_headers": ["id", "file_name", "file_index", "img_type", "time_utc", "min_delta"],
-  "eumetsat_date_path": "/ims_archive/Operational/MSG/images/HRIT_RSS/{img_type}/{year}/{month}/{day}",
+  "eumetsat_date_path": "{img_type}/{year}/{month}/{day}",
   "eumetsat_frame_name": "{year}{month}{day}{hour}{minute}.{img_format}",
   "h5_file_name_format": "IMS_{img_type}_{year}_{start_day}_{end_day}.h5",
-  "h5_files_directory": "/ims_projects/Research/Oren/Lia_Ofir/ims_data/data/{img_type}/{year}",
+  "h5_files_directory": "data/{img_type}/{year}",
+  "event_length": 60,
   "h5_files": [
     {
       "img_type": "MIDDLE_EAST_VIS",

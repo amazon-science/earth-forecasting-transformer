@@ -15,6 +15,7 @@ EUMETSAT_DATE_PATH = "/ims_archive/Operational/MSG/images/HRIT_RSS/{img_type}/{y
 EUMETSAT_FRAME_NAME = "{year}{month}{day}{hour}{minute}.{img_format}"
 CFG_FILE_PATH = "/ims_projects/Research/Oren/Lia_Ofir/ims_data/extract_cfg.json"
 
+
 class IMSH5():
     """
     represents an h5 file containing IMS data.
@@ -25,7 +26,7 @@ class IMSH5():
                  start_date, end_date,
                  sunrise=timedelta(hours=2, minutes=40),
                  sunset=timedelta(hours=16, minutes=40),
-                 event_size=None,
+                 event_length=None,
                  sample_mode='sequent',
                  img_format='png',
                  shape=IMG_SHAPES['png'],
@@ -64,11 +65,11 @@ class IMSH5():
             self.sunrise = timedelta(hours=2, minutes=40)
             self.sunset = timedelta(hours=16, minutes=40)
 
-        if event_size is None:
-            self.event_size = int((self.sunset.seconds - self.sunrise.seconds) / self.time_delta.seconds + 1)
+        if event_length is None:
+            self.event_length = int((self.sunset.seconds - self.sunrise.seconds) / self.time_delta.seconds + 1)
         else:
-            assert event_size > 0
-            self.event_size = event_size
+            assert event_length > 0
+            self.event_length = event_length
 
         # frame parameters
         assert img_format in IMG_FORMATS
@@ -96,10 +97,9 @@ class IMSH5():
         self.channels = channels
 
         # path parameters
-        if not h5_files_directory:
-            self.h5_files_directory = H5_FILES_DIRECTORY.format(img_type=self.img_type, year=self.year)
-        if not h5_file_name_format:
-            self._h5_file_name()
+        self.h5_files_directory = (H5_FILES_DIRECTORY if h5_files_directory is None else h5_files_directory).format(
+            img_type=self.img_type, year=self.year)
+        self._h5_file_name(h5_file_name_format)
         if not catalog_headers:
             self.catalog_headers = CATALOG_HEADERS
         else:
@@ -108,7 +108,7 @@ class IMSH5():
             self.eumetsat_date_path = EUMETSAT_DATE_PATH
         else:
             self.eumetsat_date_path = eumetsat_date_path
-        if not eumetsat_frame_name :
+        if not eumetsat_frame_name:
             self.eumetsat_frame_name = EUMETSAT_FRAME_NAME
         else:
             self.eumetsat_frame_name = eumetsat_frame_name
@@ -122,11 +122,12 @@ class IMSH5():
         self._events = []
         self._ids = []
 
-    def _h5_file_name(self):
+    def _h5_file_name(self, h5_file_name_format):
         h5_start_day = self.start_date.strftime("%m%d")
         h5_end_day = self.end_date.strftime("%m%d")
-        self.h5_file_name = H5_FILE_NAME_FORMAT.format(img_type=self.img_type, year=self.year,
-                                             start_day=h5_start_day, end_day=h5_end_day)
+        self.h5_file_name = (h5_file_name_format if h5_file_name_format is not None else H5_FILE_NAME_FORMAT).format(
+            img_type=self.img_type, year=self.year,
+            start_day=h5_start_day, end_day=h5_end_day)
 
     def _open_file(self):
         # create directory for h5 file
@@ -163,30 +164,48 @@ class IMSH5():
         self.file.create_dataset(self.img_type, data=self._events)
 
     def _discover_events(self, date):
-        frames_path = self.eumetsat_date_path.format(year=date.year, month=date.month, day=date.day)
+        year = date.strftime("%Y")
+        month = date.strftime("%m")
+        day = date.strftime("%d")
+        frames_path = self.eumetsat_date_path.format(img_type=self.img_type, year=year, month=month, day=day)
+
+        if not os.path.isdir(frames_path):
+            if self.verbose:
+                print(f"Did not find directory {frames_path}")
+                return
+
         frame_names = os.listdir(frames_path)
         frame_df = pd.DataFrame(frame_names, columns=["frame_name"])
         frame_df["frame_time"] = pd.to_datetime(frame_df["frame_name"], format=f'%Y%m%d%H%M.{self.img_format}')
         frame_df["frame_path"] = frames_path + "/" + frame_df["frame_name"]
         # filter
-        start_time = datetime(year=date.year, month=date.month, day=date.day, hour=self.sunrise.hour, minute=self.sunrise.minute)
-        end_time = datetime(year=date.year, month=date.month, day=date.day, hour=self.sunset.hour, minute=self.sunset.minute)
-        frame_df["frame_time"] = frame_df[start_time <= frame_df["frame_time"] <= end_time]
+        start_time = date + self.sunrise
+        end_time = date + self.sunset
+        frame_df = frame_df[(start_time <= frame_df["frame_time"]) & (frame_df["frame_time"] <= end_time)]
         # sort
         frame_df.sort_values(by='frame_time', inplace=True, ascending=True)
-        frame_df = frame_df.set_index('frame_time')
+        # dummy frame for the last sequence
+        dummy = {'frame_time': None, 'frame_name': None, 'frame_path': None}
+        frame_df = frame_df._append(dummy, ignore_index=True)
 
         seq_length = 0
         for i, frame_time in enumerate(frame_df['frame_time']):
-            if i > 0 and frame_df.iloc[i-1]["frame_time"] != (frame_time - self.time_delta):
-                if seq_length >= self.event_size:
-                    for j in range(i-seq_length, i, self.event_size):
-                        frames = frame_df.iloc[j: j+seq_length]
-                        self._load_event(frames)
-                    seq_length = 0
-                else:
-                    if self.verbose:
-                        print(f"frames from {frame_df.iloc[i-seq_length]['frame_time']} to {frame_df.iloc[i-1]['frame_time']} was not appended.")
+            # the sequence will be broken if the previous frame is not timedelta before the current
+            # or when we are at the last frame
+            if i > 0 and frame_df.iloc[i - 1]["frame_time"] != (frame_time - self.time_delta):
+                j = i - seq_length
+
+                while j <= (i - self.event_length):
+                    event_frames = frame_df.iloc[j: j + self.event_length]
+                    self._load_event(event_frames)
+                    j += self.event_length
+
+                if (i - self.event_length - j) < 0 and self.verbose:
+                    print(
+                        f"frames from {frame_df.iloc[j]['frame_time']} to {frame_df.iloc[i - 1]['frame_time']} was not appended.")
+
+                seq_length = 1 # because the frame that broke the sequence will be getting into the next sequence
+
             else:
                 seq_length += 1
 
@@ -198,7 +217,7 @@ class IMSH5():
         event_id = start_event_time.strftime("%Y%m%d%H%M")
 
         for frame in frames.iterrows():
-            frame_data = self._load_frame(frame["frame_path"])
+            frame_data = self._load_frame(frame[1].loc["frame_path"])
             event_frames.append(frame_data)
 
         # add event
@@ -230,8 +249,9 @@ class IMSH5():
 
             pixels = pixels[self.slice_x, self.slice_y, :]
             if self.channels == 'grayscale':
-                pixels = 0.299 * pixels[:, :, 0] + 0.587 * pixels[:, :, 1] + 0.114 * pixels[:, :, 2] # https://spec.oneapi.io/oneipl/0.6/convert/rgb-gray-conversion.html, https://github.com/pytorch/vision/blob/main/torchvision/transforms/_functional_tensor.py
-                pixels = pixels.reshape(*pixels.shape, 1) # HWC
+                pixels = 0.299 * pixels[:, :, 0] + 0.587 * pixels[:, :, 1] + 0.114 * pixels[:, :,
+                                                                                     2]  # https://spec.oneapi.io/oneipl/0.6/convert/rgb-gray-conversion.html, https://github.com/pytorch/vision/blob/main/torchvision/transforms/_functional_tensor.py
+                pixels = pixels.reshape(*pixels.shape, 1)  # HWC
 
         return pixels
 
@@ -242,17 +262,19 @@ def main():
 
     catalog_file_path = Path(cfg["catalog_file_path"])
     catalog_headers = cfg["catalog_headers"]
-    eumetsat_frame_path = cfg["eumetsat_frame_path"]
+    eumetsat_date_path = cfg["eumetsat_date_path"]
+    eumetsat_frame_name = cfg["eumetsat_frame_name"]
     h5_file_name_format = cfg["h5_file_name_format"]
     h5_files_directory = cfg["h5_files_directory"]
     h5_files = cfg["h5_files"]
+    event_length = int(cfg["event_length"])
 
     catalog = pd.DataFrame(columns=catalog_headers)
 
     # check if there is existing CATALOG file in path
     if catalog_file_path.is_file():
         print(f"WARNING: CATALOG file already exists at {catalog_file_path}."
-              f"The script is going to add to existing file.")
+              f" The script is going to add to the existing file.")
     else:
         # create an empty CATALOG file
         catalog.to_csv(str(catalog_file_path), index=False)
@@ -275,6 +297,7 @@ def main():
                         time_delta=time_delta,
                         start_date=start_date,
                         end_date=end_date,
+                        event_length=event_length,
                         sunrise=sunrise,
                         sunset=sunset,
                         sample_mode=sample_mode,
@@ -285,10 +308,12 @@ def main():
                         channels=channels,
                         catalog_headers=catalog_headers,
                         h5_files_directory=h5_files_directory,
-                        h5_file_name_format=h5_file_name_format)
+                        h5_file_name_format=h5_file_name_format,
+                        eumetsat_date_path=eumetsat_date_path,
+                        eumetsat_frame_name=eumetsat_frame_name)
 
         h5_file.extract_all()
-        catalog.to_csv(str(catalog_file_path), mode='a', index=False, header=False) # adds to existing CATALOG file
+        catalog.to_csv(str(catalog_file_path), mode='a', index=False, header=False)  # adds to existing CATALOG file
 
 
 if __name__ == '__main__':
