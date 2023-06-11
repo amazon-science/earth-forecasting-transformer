@@ -2365,7 +2365,7 @@ class CuboidTransformerDecoder(nn.Module):
             if self.hierarchical_pos_embed:
                 self.hierarchical_pos_embed_l = nn.ModuleList([
                     PosEmbed(embed_dim=self.mem_shapes[i][-1], typ=pos_embed_type,
-                             maxT=self.mem_shapes[i][0], maxH=self.mem_shapes[i][1], maxW=self.mem_shapes[i][2])
+                             maxT=target_temporal_length, maxH=self.mem_shapes[i][1], maxW=self.mem_shapes[i][2])
                     for i in range(self.num_blocks - 1)])
 
         self.reset_parameters()
