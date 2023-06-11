@@ -20,7 +20,7 @@ from src.earthformer.datasets.ims.ims_datamodule import IMSLightningDataModule
 from src.earthformer.cuboid_transformer.cuboid_transformer import CuboidTransformerModel
 from src.earthformer.visualization.ims.ims_visualize import IMSVisualize
 
-from earthformer.utils.optim import SequentialLR, warmup_lambda
+from src.earthformer.utils.optim import SequentialLR, warmup_lambda
 
 from datetime import datetime
 from omegaconf import OmegaConf
@@ -59,34 +59,34 @@ class CuboidIMSModule(pl.LightningModule):
                                    self.hparams.optim.total_batch_size)
 
         # create logging directories and set up logging
-        self._init_logging()
+        self._init_logging(logging_dir)
 
     def _init_logging(self, logging_dir: str = None):
         # creates logging directories and adds their path as data members
-
-
         if logging_dir is None:
             logging_dir = os.path.join(os.path.dirname(__file__), "logging")
-
         self.logging_dir = logging_dir
-        self.scores_dir = os.path.join(self.logging_dir, "scores")
-        self.examples_root_dir = os.path.join(self.logging_dir, "examples")
-        self.checkpoints_dir = os.path.join(self.logging_dir, "checkpoints")
-
         os.makedirs(self.logging_dir, exist_ok=True)
-        os.makedirs(self.scores_dir, exist_ok=True)
-        os.makedirs(self.examples_root_dir, exist_ok=True)
-        os.makedirs(self.checkpoints_dir, exist_ok=True)
-
-        # add curr version subfolder to examples 
+        
+        self.our_logs_dir = os.path.join(self.logging_dir, "our_logs")
+        os.makedirs(self.our_logs_dir, exist_ok=True)
+                
+        # add a new directory for the curr version 
         max_version_num = self.hparams.logging.first_version_num
-        for f in os.listdir(self.examples_root_dir):
+        for f in os.listdir(self.our_logs):
             if os.path.isdir(f):
                 if (f.split("_")[-1]).isnumeric():
                     max_version_num = max(max_version_num, int(f.split("_")[-1]))
 
-        self.examples_dir = os.path.join(self.examples_root_dir, str(max_version_num))
+        self.curr_version_dir = os.path.join(self.our_logs_dir, str(max_version_num))
+        os.makedirs(self.curr_version_dir, exist_ok=True)
+
+        self.scores_dir = os.path.join(self.curr_version_dir, "scores")
+        self.examples_dir = os.path.join(self.curr_version_dir, "examples")
+        self.checkpoints_dir = os.path.join(self.curr_version_dir, "checkpoints")
+        os.makedirs(self.scores_dir, exist_ok=True)
         os.makedirs(self.examples_dir, exist_ok=True)
+        os.makedirs(self.checkpoints_dir, exist_ok=True)
 
         # get visualization config
         self.visualize = IMSVisualize(save_dir=self.examples_dir,
@@ -96,7 +96,7 @@ class CuboidIMSModule(pl.LightningModule):
                                       plot_stride=self.hparams.logging.visualize.plot_stride)
 
         # save a copy of the current config inside the logging dir
-        cfg_file_target_path = os.path.join(self.logging_dir, "cfg.yaml")
+        cfg_file_target_path = os.path.join(self.curr_version_dir, "cfg.yaml")
         if (not os.path.exists(cfg_file_target_path)) or \
                 (not os.path.samefile(self.cfg_file_path, cfg_file_target_path)):
             copyfile(self.cfg_file_path, cfg_file_target_path)
