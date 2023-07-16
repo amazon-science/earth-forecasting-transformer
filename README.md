@@ -69,7 +69,7 @@ If you have CUDA 11.7 installed under `/opt/cuda`, run:
 
 ```bash
 python3 -m pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 -f https://download.pytorch.org/whl/torch_stable.html
-python3 -m pip install pytorch_lightning>=1.9.0
+python3 -m pip install pytorch_lightning==1.6.4
 python3 -m pip install xarray netcdf4 opencv-python earthnet==0.3.9
 cd ROOT_DIR/earth-forecasting-transformer
 python3 -m pip install -U -e . --no-build-isolation
