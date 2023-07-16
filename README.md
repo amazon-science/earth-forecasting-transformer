@@ -8,7 +8,7 @@ By [Zhihan Gao](https://scholar.google.com/citations?user=P6ACUAUAAAAJ&hl=en), [
 
 This repo is the official implementation of ["Earthformer: Exploring Space-Time Transformers for Earth System Forecasting"](https://www.amazon.science/publications/earthformer-exploring-space-time-transformers-for-earth-system-forecasting) that will appear in NeurIPS 2022. 
 
-Check our [poster](https://deep-earth.s3.amazonaws.com/papers/earthformer_neurips2022/Earthformer_poster_NeurIPS22.pdf).
+Check our [poster](https://earthformer.s3.amazonaws.com/docs/Earthformer_poster_NeurIPS22.pdf).
 
 ## Tutorials
 
@@ -56,8 +56,8 @@ Lastly, install dependencies. For example, if you have CUDA 11.6 installed under
 
 ```bash
 python3 -m pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 -f https://download.pytorch.org/whl/torch_stable.html
-python3 -m pip install pytorch_lightning>=1.6.4
-python3 -m pip install xarray netcdf4 opencv-python
+python3 -m pip install pytorch_lightning==1.6.4
+python3 -m pip install xarray netcdf4 opencv-python earthnet==0.3.9
 cd ROOT_DIR/earth-forecasting-transformer
 python3 -m pip install -U -e . --no-build-isolation
 
@@ -68,9 +68,9 @@ CUDA_HOME=/usr/local/cuda python3 -m pip install -v --no-cache-dir --global-opti
 If you have CUDA 11.7 installed under `/opt/cuda`, run:
 
 ```bash
-python3 -m pip install torch==1.13.0+cu117 torchvision==0.14.0+cu117 -f https://download.pytorch.org/whl/torch_stable.html
-python3 -m pip install pytorch_lightning>=1.7.7 
-python3 -m pip install xarray netcdf4 opencv-python
+python3 -m pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 -f https://download.pytorch.org/whl/torch_stable.html
+python3 -m pip install pytorch_lightning==1.6.4
+python3 -m pip install xarray netcdf4 opencv-python earthnet==0.3.9
 cd ROOT_DIR/earth-forecasting-transformer
 python3 -m pip install -U -e . --no-build-isolation
 
@@ -91,7 +91,7 @@ $\frac{d^2\boldsymbol{x}\_{i}}{dt^2} = - \sum\_{j\neq i}\frac{G m\_j (\boldsymbo
 
 where $\boldsymbol{x}\_{i}$ is the spatial coordinates of the $i$-th digit, $G$ is the gravitational constant, $m\_j$ is the mass of the $j$-th digit, $r$ is a constant representing the power scale in the gravitational law, $d\_{\text{soft}}$ is a small softening distance that ensures numerical stability.
 
-The N-body MNIST dataset we used in the paper can be downloaded from https://deep-earth.s3.amazonaws.com/experiments/earthformer/nbody/nbody_paper.zip .
+The N-body MNIST dataset we used in the paper can be downloaded from https://earthformer.s3.amazonaws.com/nbody/nbody_paper.zip .
 
 In addition, you can also use the following script for downloading / extracting the data:
 ```bash
@@ -133,13 +133,16 @@ unzip datasets/enso_round1_train_20210201.zip -d datasets/icar_enso_2021
 
 ### EarthNet2021
 
-You may follow the [official instructions](https://www.earthnet.tech/docs/ds-download/) for downloading [EarthNet2021 dataset](https://www.earthnet.tech/docs/ch-task/). 
+You may follow the [official instructions](https://www.earthnet.tech/en21/ds-download/) for downloading [EarthNet2021 dataset](https://www.earthnet.tech/en21/ch-task/). 
 We recommend download it via the [earthnet_toolket](https://github.com/earthnet2021/earthnet-toolkit).
-
 ```python
-# python3 -m pip install earthnet
 import earthnet as en
-en.Downloader.get("./datasets/earthnet2021", "all")
+en.download(dataset="earthnet2021", splits="all", save_directory="./datasets/earthnet2021")
+```
+Alternatively, you may download [EarthNet2021x dataset](https://www.earthnet.tech/en21x/download/), which is the same as [EarthNet2021 dataset](https://www.earthnet.tech/en21/ch-task/) except for the file format (`.npz` for EarthNet2021 and `.nc` for EarthNet2021x).
+```python
+import earthnet as en
+en.download(dataset="earthnet2021x", splits="all", save_directory="./datasets/earthnet2021x")
 ```
 
 It requires 455G disk space in total.
@@ -157,9 +160,9 @@ Find detailed instructions in how to train the models or running inference with 
 
 | Dataset       | Script Folder                                            | Pretrained Weights                                                                                                     | Config                                                                              |
 |---------------|----------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| SEVIR         | [scripts](./scripts/cuboid_transformer/sevir)            | [link](https://deep-earth.s3.amazonaws.com/experiments/earthformer/pretrained_checkpoints/earthformer_sevir.pt)        | [config](./scripts/cuboid_transformer/sevir/earthformer_sevir_v1.yaml)              |
-| ICAR-ENSO     | [scripts](./scripts/cuboid_transformer/enso)             | [link](https://deep-earth.s3.amazonaws.com/experiments/earthformer/pretrained_checkpoints/earthformer_icarenso2021.pt) | [config](./scripts/cuboid_transformer/enso/earthformer_enso_v1.yaml)                |
-| EarthNet2021  | [scripts](./scripts/cuboid_transformer/earthnet_w_meso)  | [link](https://deep-earth.s3.amazonaws.com/experiments/earthformer/pretrained_checkpoints/earthformer_earthnet2021.pt) | [config](./scripts/cuboid_transformer/earthnet_w_meso/earthformer_earthnet_v1.yaml) |
+| SEVIR         | [scripts](./scripts/cuboid_transformer/sevir)            | [link](https://earthformer.s3.amazonaws.com/pretrained_checkpoints/earthformer_sevir.pt)        | [config](./scripts/cuboid_transformer/sevir/earthformer_sevir_v1.yaml)              |
+| ICAR-ENSO     | [scripts](./scripts/cuboid_transformer/enso)             | [link](https://earthformer.s3.amazonaws.com/pretrained_checkpoints/earthformer_icarenso2021.pt) | [config](./scripts/cuboid_transformer/enso/earthformer_enso_v1.yaml)                |
+| EarthNet2021  | [scripts](./scripts/cuboid_transformer/earthnet_w_meso)  | [link](https://earthformer.s3.amazonaws.com/pretrained_checkpoints/earthformer_earthnet2021.pt) | [config](./scripts/cuboid_transformer/earthnet_w_meso/earthformer_earthnet_v1.yaml) |
 | N-body MNIST  | [scripts](./scripts/cuboid_transformer/nbody)            | -                                                                                                                      | -                                                                                   |
 
 ## Citing Earthformer

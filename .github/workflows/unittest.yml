@@ -21,7 +21,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
-        pip install pytorch_lightning>=1.7.4
+        pip install pytorch_lightning==1.6.4
         pip install xarray netcdf4 opencv-python
         pip install -U -e . --no-build-isolation
     - name: Test with pytest

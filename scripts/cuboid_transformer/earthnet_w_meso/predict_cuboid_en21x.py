@@ -64,7 +64,7 @@ def main():
         oc_file=config_file
     )
 
-    pretrained_checkpoint_url = "https://deep-earth.s3.amazonaws.com/experiments/earthformer/pretrained_checkpoints/earthformer_earthnet2021.pt"
+    pretrained_checkpoint_url = "https://earthformer.s3.amazonaws.com/pretrained_checkpoints/earthformer_earthnet2021.pt"
     local_checkpoint_path = os.path.join(save_dir, "earthformer_earthnet2021.pt")
     download(url=pretrained_checkpoint_url, path=local_checkpoint_path)
 
