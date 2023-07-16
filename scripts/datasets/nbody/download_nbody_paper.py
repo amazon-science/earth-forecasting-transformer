@@ -13,7 +13,7 @@ def s3_download_nbody_paper(save_dir=None, exist_ok=False):
         warnings.warn(f"N-body dataset {os.path.join(save_dir, nbody_paper_name)} already exists!")
     else:
         os.makedirs(save_dir, exist_ok=True)
-        os.system(f"aws s3 cp --no-sign-request s3://deep-earth/experiments/earthformer/nbody/{nbody_paper_zip_name} "
+        os.system(f"aws s3 cp --no-sign-request s3://earthformer/nbody/{nbody_paper_zip_name} "
                   f"{save_dir}")
         os.system(f"unzip {os.path.join(save_dir, nbody_paper_zip_name)} "
                   f"-d {save_dir}")

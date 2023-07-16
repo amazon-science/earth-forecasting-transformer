@@ -123,5 +123,5 @@ def s3_download_pretrained_ckpt(ckpt_name, save_dir=None, exist_ok=False):
         warnings.warn(f"Checkpoint file {os.path.join(save_dir, ckpt_name)} already exists!")
     else:
         os.makedirs(save_dir, exist_ok=True)
-        os.system(f"aws s3 cp --no-sign-request s3://deep-earth/experiments/earthformer/pretrained_checkpoints/{ckpt_name} "
+        os.system(f"aws s3 cp --no-sign-request s3://earthformer/pretrained_checkpoints/{ckpt_name} "
                   f"{save_dir}")
